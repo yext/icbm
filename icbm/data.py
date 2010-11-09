@@ -20,6 +20,15 @@ def cache(f):
         return ret[self]
     return _Wrapper
 
+printed = set()
+def pdep(a, b):
+    if (a, b) in printed:
+        return
+    if a == b:
+        return
+    #print "\"%s\" -> \"%s\"" % (a, b)
+    printed.add((a, b))
+
 class DataHolder(object):
 
     # path:name -> fake-o data holders, which know how to insert things
@@ -40,12 +49,16 @@ class DataHolder(object):
         raise NotImplementedError
 
     def LoadSpecs(self, deps):
-        deps = list(deps)
-        #for dep in deps:
-        #    print "\"%s\" -> \"%s\"" % (self.FullName(), dep)
+        deps = list(self.Canonicalize(deps))
+        for dep in deps:
+            pdep(self.FullName(), dep)
         while len(deps) > 0:
             depname = deps.pop()
-            LoadTargetSpec(self.module, depname)
+            try:
+                LoadTargetSpec(self.module, depname)
+            except:
+                print "%s: error loading %s=%s" % (self.FullName(), self.module, depname)
+                raise
             dep = DataHolder.Get(self.module, depname)
             assert dep, "%s not found by %s:%s" % (depname, self.path, self.name)
             if dep.FullName() in self._processed:
@@ -54,8 +67,8 @@ class DataHolder(object):
             if dep.deps:
                 ds = list(dep.Canonicalize(dep.deps))
                 deps.extend(ds)
-                #for d in ds:
-                #    print "\"%s\" -> \"%s\"" % (dep.FullName(), d)
+                for d in ds:
+                    pdep(dep.FullName(), d)
 
     def Canonicalize(self, deps):
         for dep in deps:
@@ -81,19 +94,20 @@ class DataHolder(object):
     @classmethod
     def Go(cls, targets):
         done = set()
-        while cls._processed | done != set(cls._registered):
-            todo = set(cls._registered) - cls._processed - done
-            for key in todo:
-                cls._registered[key].LoadSpecs()
-                done.add(key)
+        # TODO: is this necessary anymore?
+        #while cls._processed | done != set(cls._registered):
+        #    todo = set(cls._registered) - cls._processed - done
+        #    for key in todo:
+        #        cls._registered[key].LoadSpecs()
+        #        done.add(key)
         e = engine.Engine()
         target_names = []
-        for target in cls._registered:
-            holder = cls.Get(None, target)
-            if not holder:
-                print >>sys.stderr, "Unknown target", target
-                continue
-            holder.Apply(e)
+        #for target in cls._registered:
+        #    holder = cls.Get(None, target)
+        #    if not holder:
+        #        print >>sys.stderr, "Unknown target", target
+        #        continue
+        #    holder.Apply(e)
         for target in targets:
             holder = cls.Get(None, target)
             if not holder:
