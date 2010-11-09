@@ -1,0 +1,25 @@
+<project name="" default="compile" basedir=".">
+  <path id="libs.path">
+    <fileset dir="jars" includes="*.jar" />
+  </path>
+  <target name="compile">
+    <depend srcdir="src"
+            destdir="classes"
+            cache="depcache"
+            closure="yes"/>
+    <javac srcdir="src"
+           destdir="classes"
+           encoding="cp1252"
+           compiler="javac1.6"
+           target="1.6"
+           classpathref="libs.path"
+	   debug="yes"
+	   includeAntRuntime="false"
+           >
+      <compilerarg value="-Xlint"/>
+      <compilerarg value="-Xlint:-path"/>
+      <compilerarg value="-Xlint:-serial" />
+      <compilerarg value="-Werror"/>
+    </javac>
+  </target>
+</project>
