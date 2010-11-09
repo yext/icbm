@@ -228,28 +228,37 @@ def FixPath(module, path, lst):
         else:
             yield fake_path, fake_path
 
-def java_library(module, path, name,
+def java_library(module, dpath, name, path=None,
                  files=None, jars=None, deps=None, data=None):
-    obj = JavaLibrary(module, path, name,
-                      list(FixPath(module, path, files)),
-                      list(FixPath(module, path, jars)),
+    if path:
+        dpath = path
+    obj = JavaLibrary(module, dpath, name,
+                      list(FixPath(module, dpath, files)),
+                      list(FixPath(module, dpath, jars)),
                       deps,
-                      list(FixPath(module, path, data)))
-    DataHolder.Register(module, path, name, obj)
+                      list(FixPath(module, dpath, data)))
+    DataHolder.Register(module, dpath, name, obj)
 
-def java_binary(module, path, name, main=None, deps=None, flags=False):
-    obj = JavaBinary(module, path, name, main, deps, flags)
-    DataHolder.Register(module, path, name, obj)
+def java_binary(module, dpath, name, main=None, deps=None,
+                flags=False, path=None):
+    if path:
+        dpath = path
+    obj = JavaBinary(module, dpath, name, main, deps, flags)
+    DataHolder.Register(module, dpath, name, obj)
 
-def java_deploy(module, path, name, binary):
-    obj = JavaJar(module, path, name, binary)
-    DataHolder.Register(module, path, name, obj)
+def java_deploy(module, dpath, name, binary, path=None):
+    if path:
+        dpath = path
+    obj = JavaJar(module, dpath, name, binary)
+    DataHolder.Register(module, dpath, name, obj)
 
-def generate(module, path, name, compiler, ins, outs):
-    obj = Generate(module, path, name, compiler,
-                   list(FixPath(module, path, ins)),
-                   map(lambda x: x[0], FixPath(module, path, outs)))
-    DataHolder.Register(module, path, name, obj)
+def generate(module, dpath, name, compiler, ins, outs, path=None):
+    if path:
+        dpath = path
+    obj = Generate(module, dpath, name, compiler,
+                   list(FixPath(module, dpath, ins)),
+                   map(lambda x: x[0], FixPath(module, dpath, outs)))
+    DataHolder.Register(module, dpath, name, obj)
 
 
 loaded = set()
@@ -278,10 +287,10 @@ def LoadTargetSpec(module, target):
                    glob.glob(os.path.join(d, pattern)))
     scope = {
         "__builtins__": builtins,
-        "java_library": functools.partial(java_library, module),
-        "java_binary": functools.partial(java_binary, module),
-        "java_deploy": functools.partial(java_deploy, module),
-        "generate": functools.partial(generate, module),
+        "java_library": functools.partial(java_library, module, dirname),
+        "java_binary": functools.partial(java_binary, module, dirname),
+        "java_deploy": functools.partial(java_deploy, module, dirname),
+        "generate": functools.partial(generate, module, dirname),
         "glob": relglob,
         }
     execfile(fn, scope)
