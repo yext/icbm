@@ -13,9 +13,9 @@ import data
 def main():
     for target in sys.argv[1:]:
         # load the corresponding spec files
-        data.LoadTargetSpec(None, target)
+        data.LoadTargetSpec(data.TOPLEVEL, target)
     for target in sys.argv[1:]:
-        d = data.DataHolder.Get(None, target)
+        d = data.DataHolder.Get(data.TOPLEVEL, target)
         d.LoadSpecs()
     data.DataHolder.Go(sys.argv[1:])
 

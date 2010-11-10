@@ -54,7 +54,10 @@ class Engine(object):
 
     def Worker(self):
         while True:
-            item = self.ready_queue.get()
+            try:
+                item = self.ready_queue.get()
+            except:
+                return
             print "building", item.Name()
             try:
                 item.Setup(self)
@@ -461,3 +464,24 @@ class Generate(Target):
     def GetOutput(self, path):
         assert path in self.outputs, path
         return os.path.join(self.prefix, path)
+
+
+class Alias(Target):
+
+    def __init__(self, path, name, deps):
+        Target.__init__(self, path, name)
+        self.deps = deps
+
+    def AddDependencies(self, engine):
+        for dep in self.deps:
+            engine.Depend(self, dep)
+        engine.Provide(self, self.name)
+
+    def Setup(self, engine):
+        pass
+
+    def Run(self, engine):
+        return True
+
+    def GetOutput(self, path):
+        return path

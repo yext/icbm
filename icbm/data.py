@@ -29,6 +29,8 @@ def pdep(a, b):
     #print "\"%s\" -> \"%s\"" % (a, b)
     printed.add((a, b))
 
+TOPLEVEL = "_top"
+
 class DataHolder(object):
 
     # path:name -> fake-o data holders, which know how to insert things
@@ -109,7 +111,7 @@ class DataHolder(object):
         #        continue
         #    holder.Apply(e)
         for target in targets:
-            holder = cls.Get(None, target)
+            holder = cls.Get(TOPLEVEL, target)
             if not holder:
                 print >>sys.stderr, "Unknown target", target
                 continue
@@ -228,15 +230,36 @@ class Generate(DataHolder):
     def LoadSpecs(self):
         pass
 
+class Alias(DataHolder):
+
+    def __init__(self, module, path, name, deps):
+        DataHolder.__init__(self, module, path, name)
+        self.deps = deps
+
+    def Apply(self, e):
+        deps = []
+        for depname in self.deps:
+            dep = DataHolder.Get(self.module, depname)
+            deps.append(dep.Apply(e))
+        target = engine.Alias(self.path, "__alias_%s" % self.name, deps)
+        e.AddTarget(target)
+        return target.Name()
+
+    def LoadSpecs(self):
+        DataHolder.LoadSpecs(self, self.deps)
+
 def FixPath(module, path, lst):
     if not lst:
         return
     for l in lst:
         fake_path = os.path.join(path, l)
-        base = "."
-        if not fake_path.startswith("jars"):
-            base = SRCDIR
-        real_path = os.path.join(module, base, fake_path)
+        if module != TOPLEVEL:
+            base = "."
+            if not fake_path.startswith("jars"):
+                base = SRCDIR
+            real_path = os.path.join(module, base, fake_path)
+        else:
+            real_path = fake_path
         if os.path.exists(real_path):
             yield fake_path, os.path.abspath(real_path)
         else:
@@ -274,6 +297,9 @@ def generate(module, dpath, name, compiler, ins, outs, path=None):
                    map(lambda x: x[0], FixPath(module, dpath, outs)))
     DataHolder.Register(module, dpath, name, obj)
 
+def alias(module, path, name, deps):
+    obj = Alias(module, path, name, deps)
+    DataHolder.Register(module, path, name, obj)
 
 loaded = set()
 
@@ -285,10 +311,13 @@ def LoadTargetSpec(module, target):
     assert module, "module unknown for target %s" % target
     assert ":" in target, target
     dirname, tgt = target.split(":")
-    base = "."
-    if not dirname.startswith("jars"):
-        base = SRCDIR
-    fn = os.path.join(module, base, dirname, "build.spec")
+    if module == TOPLEVEL:
+        fn = os.path.join(dirname, "build.spec")
+    else:
+        base = "."
+        if not dirname.startswith("jars"):
+            base = SRCDIR
+        fn = os.path.join(module, base, dirname, "build.spec")
     if fn in loaded:
         return
     #print "loading", fn
@@ -305,6 +334,7 @@ def LoadTargetSpec(module, target):
         "java_binary": functools.partial(java_binary, module, dirname),
         "java_deploy": functools.partial(java_deploy, module, dirname),
         "generate": functools.partial(generate, module, dirname),
+        "alias": functools.partial(alias, module, dirname),
         "glob": relglob,
         }
     execfile(fn, scope)
