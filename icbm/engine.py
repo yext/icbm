@@ -17,18 +17,10 @@ import time
 import traceback
 import zipfile
 
+import class_cache
+import symlink
+
 BUILD_DIR = "build"
-
-def symlink_win(src, dst):
-    subprocess.call(["mklink", dst, src])
-
-def symlink_other(src, dst):
-    os.symlink(src, dst)
-
-if hasattr(sys, "winver"):
-    symlink = symlink_win
-else:
-    symlink = symlink_other
 
 class BuildError(Exception):
 
@@ -51,6 +43,8 @@ class Engine(object):
         self.waitor_lock = threading.Lock()
         self.done = set()
         self.waitors = []
+        self.class_cache = class_cache.ClassCache(
+            os.path.join(BUILD_DIR, "classcache"))
 
     def Worker(self):
         while True:
@@ -228,7 +222,7 @@ class JavaCompile(Target):
         # Link in the compile.xml which will tell ant to build things
         compile_xml = os.path.join(prefix, "compile.xml")
         if not os.path.exists(compile_xml):
-            symlink("../../tools/icbm/compile.xml", compile_xml)
+            symlink.symlink("../../tools/icbm/compile.xml", compile_xml)
 
         # Set up the src/ directory, by symlinking in all the
         # depending source files.
@@ -241,7 +235,7 @@ class JavaCompile(Target):
             if not os.path.exists(path):
                 os.makedirs(path)
             dest = os.path.join(path, os.path.basename(source))
-            symlink(engine.GetFilename(filename), dest)
+            symlink.symlink(engine.GetFilename(filename), dest)
 
         # Set up the jars/ directory by symlinking in all the depending jars.
         jarprefix = self.jarprefix = os.path.join(prefix, "jars")
@@ -249,8 +243,8 @@ class JavaCompile(Target):
             shutil.rmtree(jarprefix)
         os.makedirs(jarprefix)
         for jar, filename in self.jars.iteritems():
-            symlink(engine.GetFilename(filename),
-                    os.path.join(jarprefix, os.path.basename(jar)))
+            symlink.symlink(engine.GetFilename(filename),
+                            os.path.join(jarprefix, os.path.basename(jar)))
 
         # Set up the output directory where all the class files will go
         outprefix = self.outprefix = os.path.join(prefix, "classes")
@@ -266,7 +260,7 @@ class JavaCompile(Target):
             dest = os.path.join(path, os.path.basename(data))
             if os.path.exists(dest):
                 os.unlink(dest)
-            symlink(engine.GetFilename(filename), dest)
+            symlink.symlink(engine.GetFilename(filename), dest)
 
         # Create a script to run the whole thing with appropriate
         # class path and main class.
@@ -278,6 +272,9 @@ class JavaCompile(Target):
             with outrunner:
                 outrunner.write(text % {"main_class": self.main})
             os.chmod(runner_path, 0755)
+
+        # Map in any existing class files from the class cache
+        engine.class_cache.PopulateFromCache(outprefix, self.sources)
 
     def Run(self, engine):
         # Ant is slow at figuring out that it has nothing to do, so
@@ -305,6 +302,8 @@ class JavaCompile(Target):
 
         with open(tstamp_path, "w"):
             pass
+
+        engine.class_cache.UpdateCache(self.outprefix)
 
         if not self.flags:
             return True
@@ -426,7 +425,7 @@ class Generate(Target):
                 os.makedirs(path)
             dest = os.path.join(path, os.path.basename(fake))
             if not os.path.exists(dest):
-                symlink(engine.GetFilename(real), dest)
+                symlink.symlink(engine.GetFilename(real), dest)
 
         for out in self.outputs:
             path = os.path.join(prefix, os.path.dirname(out))
