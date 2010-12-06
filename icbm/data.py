@@ -115,7 +115,7 @@ class DataHolder(object):
             if not holder:
                 print >>sys.stderr, "Unknown target", target
                 continue
-            ret = holder.Apply(e)
+            ret = holder.TopApply(e)
             if ret:
                 target_names.append(ret)
         e.ComputeDependencies()
@@ -166,6 +166,8 @@ class JavaBinary(DataHolder):
         e.AddTarget(c)
         return c.Name()
 
+    TopApply = Apply
+
     def LoadSpecs(self):
         DataHolder.LoadSpecs(self, self.deps)
         if self.flags:
@@ -191,6 +193,8 @@ class JavaJar(DataHolder):
         e.AddTarget(j)
         return j.Name()
 
+    TopApply = Apply
+
     def LoadSpecs(self):
         DataHolder.LoadSpecs(self, [self.binary])
 
@@ -203,6 +207,39 @@ class JavaLibrary(DataHolder):
         self.deps = deps
         self.data = data
         self.files = files
+
+    @cache
+    def TopApply(self, e):
+        sources = set(self.files)
+        jars = self.jars = set(self.jars)
+        datas = set(self.data)
+
+        deps = list(self.deps)
+        processed = set()
+        while len(deps) > 0:
+            depname = deps.pop()
+            dep = DataHolder.Get(self.module, depname)
+            assert dep, "%s not found" % depname
+            if dep.FullName() in processed:
+                continue
+            assert isinstance(dep, JavaLibrary)
+
+            dep.Apply(e)
+
+            if dep.files:
+                sources.update(dep.files)
+            if dep.jars:
+                jars.update(dep.jars)
+            if dep.data:
+                datas.update(dep.data)
+            if dep.deps:
+                deps.extend(dep.Canonicalize(dep.deps))
+            processed.add(dep.FullName())
+
+        c = engine.JavaCompile(self.path, self.name, sources, jars,
+                               datas, None, None)
+        e.AddTarget(c)
+        return c.Name()
 
     def Apply(self, e):
         pass
@@ -245,6 +282,8 @@ class Alias(DataHolder):
         e.AddTarget(target)
         return target.Name()
 
+    TopApply = Apply
+
     def LoadSpecs(self):
         DataHolder.LoadSpecs(self, self.deps)
 
@@ -282,6 +321,8 @@ def java_binary(module, dpath, name, main=None, deps=None,
         dpath = path
     obj = JavaBinary(module, dpath, name, main, deps, flags)
     DataHolder.Register(module, dpath, name, obj)
+    obj = JavaJar(module, dpath, name + "_deploy", obj.FullName())
+    DataHolder.Register(module, dpath, name + "_deploy", obj)
 
 def java_deploy(module, dpath, name, binary, path=None):
     if path:
