@@ -254,7 +254,7 @@ class JavaCompile(Target):
         # Data files are meant to be on the classpath, so put them
         # into classes as well.
         for data, filename in self.data.iteritems():
-            path = os.path.join(outprefix, os.path.dirname(data))
+            path = os.path.abspath(os.path.join(outprefix, os.path.dirname(data)))
             if not os.path.exists(path):
                 os.makedirs(path)
             dest = os.path.join(path, os.path.basename(data))

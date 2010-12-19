@@ -366,9 +366,10 @@ def LoadTargetSpec(module, target):
     builtins = dict(globals()["__builtins__"])
     del builtins["__import__"]
     d = os.path.dirname(fn)
-    def relglob(pattern):
-        return map(lambda x: os.path.relpath(x, d),
-                   glob.glob(os.path.join(d, pattern)))
+    def relglob(pattern, excludes=[]):
+        return [os.path.relpath(fn, d)
+                for fn in glob.glob(os.path.join(d, pattern))
+                if os.path.relpath(fn, d) not in excludes]
     scope = {
         "__builtins__": builtins,
         "java_library": functools.partial(java_library, module, dirname),
