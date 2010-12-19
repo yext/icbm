@@ -236,7 +236,8 @@ class JavaLibrary(DataHolder):
                 deps.extend(dep.Canonicalize(dep.deps))
             processed.add(dep.FullName())
 
-        c = engine.JavaCompile(self.path, self.name, sources, jars,
+        c = engine.JavaCompile(self.path, os.path.join(self.path, self.name),
+                               sources, jars,
                                datas, None, None)
         e.AddTarget(c)
         return c.Name()

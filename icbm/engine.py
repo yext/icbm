@@ -222,7 +222,9 @@ class JavaCompile(Target):
         # Link in the compile.xml which will tell ant to build things
         compile_xml = os.path.join(prefix, "compile.xml")
         if not os.path.exists(compile_xml):
-            symlink.symlink("../../tools/icbm/compile.xml", compile_xml)
+            symlink.symlink(
+                os.path.join(os.path.abspath("."), "tools/icbm/compile.xml"),
+                compile_xml)
 
         # Set up the src/ directory, by symlinking in all the
         # depending source files.
@@ -268,6 +270,8 @@ class JavaCompile(Target):
         with srcrunner:
             text = srcrunner.read()
             runner_path = os.path.join(prefix, self.name)
+            if not os.path.exists(os.path.dirname(runner_path)):
+                os.makedirs(os.path.dirname(runner_path))
             outrunner = open(runner_path, "w")
             with outrunner:
                 outrunner.write(text % {"main_class": self.main})
