@@ -207,7 +207,9 @@ class JavaCompile(Target):
 
     def AddDependencies(self, engine):
         if self.flags:
-            engine.Depend(self, "flag_processor")
+            # TODO: This doesn't work.  Have to depend on flags in your target, if you want them.
+            #engine.Depend(self, "Core/src=com/alphaco/util/flags:processor")
+            pass
         for fake, real in self.sources.iteritems():
             if not real.startswith("/"):
                 engine.Depend(self, real)
@@ -326,7 +328,7 @@ class JavaCompile(Target):
             close_fds=True,
             shell=True)
         output = flags.stdout.read()
-        f = open(os.path.join(self.outprefix, "flags.cfg"), "w")
+        f = open(os.path.join(self.outprefix, "flagdescriptors.cfg"), "w")
         with f:
             f.write(output)
 

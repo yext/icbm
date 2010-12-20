@@ -24,7 +24,7 @@ def cache(f):
         return ret[self]
     return _Wrapper
 
-VERBOSE = False
+VERBOSE = True
 
 printed = set()
 def pdep(a, b):
@@ -105,6 +105,7 @@ class DataHolder(object):
           deps: List of target names that this rule depends on.
         """
         deps = list(self.Canonicalize(deps))
+        print 'loading: %s' % str(deps)
         for dep in deps:
             pdep(self.FullName(), dep)
         while len(deps) > 0:
@@ -207,7 +208,7 @@ class JavaBinary(DataHolder):
             assert dep, "%s not found" % depname
             if dep.FullName() in processed:
                 continue
-            assert isinstance(dep, JavaLibrary)
+            assert isinstance(dep, JavaLibrary), '%s is not a library' % depname
 
             dep.Apply(e)
 
@@ -231,8 +232,8 @@ class JavaBinary(DataHolder):
     def LoadSpecs(self):
         self._LoadSpecs(self.deps)
         if self.flags:
-            DataHolder._LoadSpecs(
-                self, ["Core=com/alphaco/util/flags:flag_processor"])
+            self._LoadSpecs(
+                ["Core/src=com/alphaco/util/flags:lib"])
 
 
 class JavaJar(DataHolder):
@@ -377,11 +378,10 @@ def FixPath(module, path, lst):
         fake_path = os.path.join(path, l)
         if module != TOPLEVEL:
             base = "."
-            if not fake_path.startswith("jars"):
-                base = SRCDIR
             real_path = os.path.join(module, base, fake_path)
         else:
-            real_path = fake_path
+            base = "."
+            real_path = os.path.join(base, fake_path)
         if os.path.exists(real_path):
             yield fake_path, os.path.abspath(real_path)
         else:
@@ -442,11 +442,10 @@ def LoadTargetSpec(module, target):
     assert ":" in target, target
     dirname, tgt = target.split(":")
     if module == TOPLEVEL:
-        fn = os.path.join(dirname, "build.spec")
+        base = "."
+        fn = os.path.join(base, dirname, "build.spec")
     else:
         base = "."
-        if not dirname.startswith("jars"):
-            base = SRCDIR
         fn = os.path.join(module, base, dirname, "build.spec")
     if fn in loaded:
         return

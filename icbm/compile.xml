@@ -19,6 +19,8 @@
       <compilerarg value="-Xlint"/>
       <compilerarg value="-Xlint:-path"/>
       <compilerarg value="-Xlint:-serial" />
+      <compilerarg value="-Xlint:-unchecked" />
+      <compilerarg value="-Xlint:-fallthrough" />
       <compilerarg value="-Werror"/>
     </javac>
   </target>
