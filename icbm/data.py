@@ -24,6 +24,8 @@ def cache(f):
         return ret[self]
     return _Wrapper
 
+VERBOSE = False
+
 printed = set()
 def pdep(a, b):
     """Interceptor for printing dependency links.
@@ -36,9 +38,8 @@ def pdep(a, b):
         return
     if a == b:
         return
-    # Uncomment below to actually get a list of dependency links
-    # semi-apporopriate for graphviz.
-    #print "\"%s\" -> \"%s\"" % (a, b)
+    if VERBOSE:
+        print "\"%s\" -> \"%s\"" % (a, b)
     printed.add((a, b))
 
 TOPLEVEL = "_top"
