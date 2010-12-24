@@ -44,6 +44,37 @@ def pdep(a, b):
 
 TOPLEVEL = "_top"
 
+def abs_target(target, default_module=None):
+    """Determines the canonical representation of a target, while
+    allowing syntactic sugar for the user.
+
+    Params:
+      target: e.g. "src=com/yext/subscriptions:app", src/com/yext/subscriptions:app"
+      default_module: optional module that can be used to resolve a module-less path.
+
+    Returns:
+      The fully qualified target name.
+
+    Raises:
+      Error if no module can be found and none is provided.
+    """
+    # If the target is fully-specified, just return it.
+    if '=' in target:
+        return target
+
+    # Try splitting on 'src' directory
+    elif 'src/' in target:
+        module, rt = target.split('src/')
+        return '%s=%s' % (module + 'src', rt)
+
+    # Ran out of guesses, use default module
+    elif default_module is not None:
+        return '%s=%s' % (default_module, target)
+
+    else:
+        raise Exception('No module could be determined for target: ' + target)
+
+
 class DataHolder(object):
 
     """
@@ -137,11 +168,7 @@ class DataHolder(object):
         Returns: A list of fully-qualified dependency strings.
         """
         for dep in deps:
-            if "=" in dep:
-                yield dep
-            else:
-                yield "%s=%s" % (self.module, dep)
-
+            yield abs_target(dep, self.module)
 
     @classmethod
     def Register(cls, module, path, name, obj):
@@ -154,8 +181,7 @@ class DataHolder(object):
     @classmethod
     def Get(cls, module, fname):
         """Retrieves a target from the global registry."""
-        if "=" not in fname:
-            fname = "%s=%s" % (module, fname)
+        fname = abs_target(fname, default_module=module)
         return cls._registered.get(fname)
 
     @classmethod
@@ -436,6 +462,7 @@ def LoadTargetSpec(module, target):
     """
     # TODO: cache eval results, perhaps reorganize things so that they
     # are cacheable, to avoid reparsing all the files every time.
+    target = abs_target(target, module)
     if "=" in target:
         module, target = target.split("=", 1)
     assert module, "module unknown for target %s" % target
