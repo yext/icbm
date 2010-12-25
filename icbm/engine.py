@@ -321,7 +321,7 @@ class JavaCompile(Target):
         # java -cp flag_processor/*:target/* \
         #     com.alphaco.util.flags.FlagProcessor target/classes
         flags = subprocess.Popen(
-            "java -cp flag_processor/classes:flag_processor/jars/*:%(target)s/classes:%(target)s/jars/* com.alphaco.util.flags.FlagProcessor %(target)s/classes" % {"target" : self.name},
+            "java -cp flag_processor/classes:flag_processor/jars/* com.alphaco.util.flags.FlagProcessor %(target)s/classes '%(target)s/jars/*'" % {"target" : self.name},
             cwd=BUILD_DIR,
             bufsize=1,
             stdout=subprocess.PIPE,
