@@ -43,6 +43,7 @@ class Engine(object):
         self.waitor_lock = threading.Lock()
         self.done = set()
         self.waitors = []
+        self.success = True
         self.class_cache = class_cache.ClassCache(
             os.path.join(BUILD_DIR, "classcache"))
 
@@ -60,6 +61,7 @@ class Engine(object):
                 self.done.add(item)
             except Exception:
                 traceback.print_exc()
+                self.success = False
 
             with self.waitor_lock:
                 self.EvalWaitors()
@@ -125,6 +127,8 @@ class Engine(object):
         if self.waitors:
             print "Following targets not built:", map(
                 lambda x: x.name, self.waitors)
+
+        return self.success
 
 
     def VerifyGraph(self, target, current=None, seen=None):
@@ -327,7 +331,11 @@ class JavaCompile(Target):
             stdout=subprocess.PIPE,
             close_fds=True,
             shell=True)
+
         output = flags.stdout.read()
+        if flags.wait() != 0:
+            return False
+
         f = open(os.path.join(self.outprefix, "flagdescriptors.cfg"), "w")
         with f:
             f.write(output)

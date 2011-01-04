@@ -191,6 +191,8 @@ class DataHolder(object):
         Args:
           targets: List of string specifiers of targets resolved in top-level
                    scope
+
+        Returns: True if all the targets built successfully, False otherwise
         """
         done = set()
         e = engine.Engine()
@@ -206,7 +208,7 @@ class DataHolder(object):
         e.ComputeDependencies()
         for target in target_names:
             e.BuildTarget(e.GetTarget(target))
-        e.Go()
+        return e.Go()
 
 class JavaBinary(DataHolder):
 

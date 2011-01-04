@@ -22,7 +22,9 @@ def main():
     for target in args:
         d = data.DataHolder.Get(data.TOPLEVEL, target)
         d.LoadSpecs()
-    data.DataHolder.Go(args)
+    success = data.DataHolder.Go(args)
+    if not success:
+        sys.exit(1)
 
 
 if __name__ == '__main__':
