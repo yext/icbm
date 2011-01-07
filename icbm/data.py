@@ -151,11 +151,13 @@ class DataHolder(object):
             if dep.FullName() in self._processed:
                 continue
             self._processed.add(dep.FullName())
-            if dep.deps:
+            if isinstance(dep, JavaLibrary) and dep.deps:
                 ds = list(dep.Canonicalize(dep.deps))
                 deps.extend(ds)
                 for d in ds:
                     pdep(dep.FullName(), d)
+            else:
+                dep.LoadSpecs()
 
     def Canonicalize(self, deps):
         """Fully-qualifies any non-fully-qualified dependencies in the list.
@@ -174,7 +176,7 @@ class DataHolder(object):
     def Register(cls, module, path, name, obj):
         """Registers a given target in the global registry."""
         fname = "%s=%s:%s" % (module, path, name)
-        assert fname not in cls._registered
+        assert fname not in cls._registered, fname
         assert isinstance(obj, DataHolder)
         cls._registered[fname] = obj
 
@@ -250,6 +252,11 @@ class JavaBinary(DataHolder):
                 deps.extend(dep.Canonicalize(dep.deps))
             processed.add(dep.FullName())
 
+        if self.flags:
+            dep = DataHolder.Get(
+                self.module, "Core/src=com/alphaco/util/flags:flag_processor")
+            dep.Apply(e)
+
         c = engine.JavaCompile(self.path, self.name, sources, jars,
                                datas, self.main, self.flags)
         e.AddTarget(c)
@@ -261,7 +268,7 @@ class JavaBinary(DataHolder):
         self._LoadSpecs(self.deps)
         if self.flags:
             self._LoadSpecs(
-                ["Core/src=com/alphaco/util/flags:lib"])
+                ["Core/src=com/alphaco/util/flags:flag_processor"])
 
 
 class JavaJar(DataHolder):
@@ -419,12 +426,20 @@ def java_library(module, dpath, name, path=None,
                  files=None, jars=None, deps=None, data=None):
     if path:
         dpath = path
-    obj = JavaLibrary(module, dpath, name,
-                      list(FixPath(module, dpath, files)),
-                      list(FixPath(module, dpath, jars)),
-                      deps,
-                      list(FixPath(module, dpath, data)))
-    DataHolder.Register(module, dpath, name, obj)
+    obj = DataHolder.Get(module, "%s:%s" % (dpath, name))
+    if not obj:
+        obj = JavaLibrary(module, dpath, name, [], [], [], [])
+        DataHolder.Register(module, dpath, name, obj)
+
+    if files:
+        obj.files.extend(FixPath(module, dpath, files))
+    if jars:
+        obj.jars.extend(FixPath(module, dpath, jars))
+    if deps:
+        obj.deps.extend(deps)
+    if data:
+        obj.data.extend(FixPath(module, dpath, data))
+
 
 def java_binary(module, dpath, name, main=None, deps=None,
                 flags=False, path=None):
@@ -477,6 +492,8 @@ def LoadTargetSpec(module, target):
         base = "."
         fn = os.path.join(module, base, dirname, "build.spec")
     if fn in loaded:
+        return
+    elif not os.path.exists(fn):
         return
     #print "loading", fn
     loaded.add(fn)

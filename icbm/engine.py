@@ -53,7 +53,7 @@ class Engine(object):
                 item = self.ready_queue.get()
             except:
                 return
-            print "building", item.Name()
+            print "building", item.Name(), time.time()
             try:
                 item.Setup(self)
                 if not item.Run(self):
@@ -211,9 +211,7 @@ class JavaCompile(Target):
 
     def AddDependencies(self, engine):
         if self.flags:
-            # TODO: This doesn't work.  Have to depend on flags in your target, if you want them.
-            #engine.Depend(self, "Core/src=com/alphaco/util/flags:processor")
-            pass
+            engine.Depend(self, "flag_processor")
         for fake, real in self.sources.iteritems():
             if not real.startswith("/"):
                 engine.Depend(self, real)
@@ -270,21 +268,22 @@ class JavaCompile(Target):
                 os.unlink(dest)
             symlink.symlink(engine.GetFilename(filename), dest)
 
+        # Map in any existing class files from the class cache
+        engine.class_cache.PopulateFromCache(outprefix, self.sources)
+
+    def GenerateRunner(self):
         # Create a script to run the whole thing with appropriate
         # class path and main class.
         srcrunner = open("tools/icbm/java_run.sh")
         with srcrunner:
             text = srcrunner.read()
-            runner_path = os.path.join(prefix, self.name)
+            runner_path = os.path.join(self.prefix, self.name)
             if not os.path.exists(os.path.dirname(runner_path)):
                 os.makedirs(os.path.dirname(runner_path))
             outrunner = open(runner_path, "w")
             with outrunner:
                 outrunner.write(text % {"main_class": self.main})
             os.chmod(runner_path, 0755)
-
-        # Map in any existing class files from the class cache
-        engine.class_cache.PopulateFromCache(outprefix, self.sources)
 
     def Run(self, engine):
         # Ant is slow at figuring out that it has nothing to do, so
@@ -294,7 +293,7 @@ class JavaCompile(Target):
         # TODO: This doesn't deal with newly added/removed files
         # (e.g. due to changed dependencies). Esp the former _must_ be
         # handled.
-        tstamp_path = os.path.join(self.prefix, "TIMESTAMP")
+        tstamp_path = os.path.join(self.prefix, self.name)
         if not self.NewerChanges([
                 self.srcprefix, self.jarprefix], tstamp_path):
             return True
@@ -307,15 +306,15 @@ class JavaCompile(Target):
                              #stderr=subprocess.STDOUT,
                              close_fds=True,
                              shell=False)
-        if p.wait() != 0:
-            return False
-
-        with open(tstamp_path, "w"):
-            pass
+        p.wait()
 
         engine.class_cache.UpdateCache(self.outprefix)
 
+        if p.returncode != 0:
+            return False
+
         if not self.flags:
+            self.GenerateRunner()
             return True
 
         # Execute the flagprocessor with all of its classpath, as well
@@ -325,7 +324,10 @@ class JavaCompile(Target):
         # java -cp flag_processor/*:target/* \
         #     com.alphaco.util.flags.FlagProcessor target/classes
         flags = subprocess.Popen(
-            "java -cp flag_processor/classes:flag_processor/jars/* com.alphaco.util.flags.FlagProcessor %(target)s/classes '%(target)s/jars/*'" % {"target" : self.name},
+            "java -cp flag_processor/classes:flag_processor/jars/* "
+            "com.alphaco.util.flags.FlagProcessor "
+            "%(target)s/classes "
+            "'%(target)s/jars/*'" % {"target" : self.name},
             cwd=BUILD_DIR,
             bufsize=1,
             stdout=subprocess.PIPE,
@@ -340,8 +342,7 @@ class JavaCompile(Target):
         with f:
             f.write(output)
 
-        with open(tstamp_path, "w"):
-            pass
+        self.GenerateRunner()
 
         return True
 
@@ -370,13 +371,13 @@ class JarBuild(Target):
         prefix = os.path.join(BUILD_DIR, self.target, "classes")
         # Verify that we actually need to do something. Otherwise
         # leave it alone.
-        tstamp_path = os.path.join(BUILD_DIR, ".%s.TIMESTAMP" % self.name)
+        tstamp_path = os.path.join(BUILD_DIR, self.name)
         if not self.NewerChanges(self.jars.values() + [prefix], tstamp_path):
             return True
 
         # Put together the classes dir from the compiles, as well as
         # all of the jars into a single jar.
-        out = os.path.join(BUILD_DIR, self.name)
+        out = os.path.join(BUILD_DIR, ".%s" % self.name)
         f = zipfile.ZipFile(out, "w")
         def _Add(arg, dirname, files):
             for fn in files:
@@ -403,8 +404,7 @@ Build-Revision: %s
 """ % (self.main, os.getenv("USER"), time.strftime("%F %T"), rev.strip()))
         f.close()
 
-        with open(tstamp_path, "w"):
-            pass
+        os.rename(out, os.path.join(BUILD_DIR, self.name))
 
         return True
 
