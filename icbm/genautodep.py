@@ -255,7 +255,7 @@ def ComputeDependencies(dirs):
     return modules
 
 if __name__ == '__main__':
-    modules = ComputeDependencies()
+    modules = ComputeDependencies(sys.argv[1:])
     for module in modules.itervalues():
         print module.name, ":"
         for pkg in module.files:
