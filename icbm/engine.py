@@ -81,9 +81,11 @@ class Engine(object):
             self.ready_queue.put(waitor)
 
     def Depend(self, target, f):
+        #print "----- Requiring", target, f
         self.target_deps.setdefault(target, set()).add(f)
 
     def Provide(self, target, f):
+        #print "----- Providing", target, f
         assert f not in self.target_provides
         self.target_provides[f] = target
 
@@ -433,12 +435,12 @@ class Generate(Target):
 
     def __init__(self, path, name, compiler, sources, outputs):
         Target.__init__(self, path, name)
-        self.sources = dict(sources)
+        self.sources = sources
         self.outputs = set(outputs)
         self.compiler = compiler
 
     def AddDependencies(self, engine):
-        for fake, real in self.sources.iteritems():
+        for fake, real in self.sources:
             if not real.startswith("/"):
                 engine.Depend(self, real)
         for out in self.outputs:
@@ -450,7 +452,7 @@ class Generate(Target):
         if not os.path.exists(self.prefix):
             os.makedirs(self.prefix)
 
-        for fake, real in self.sources.iteritems():
+        for fake, real in self.sources:
             path = os.path.join(prefix, os.path.dirname(fake))
             if not os.path.exists(path):
                 os.makedirs(path)
@@ -468,13 +470,14 @@ class Generate(Target):
         # the inputs. So if none of them have changed, then no need to
         # do anything.
         tstamp_path = os.path.join(self.prefix, "TIMESTAMP")
-        if not self.NewerChanges(self.prefix, tstamp_path):
+        if not self.NewerChanges([self.prefix], tstamp_path):
             return True
 
         # Execute the compiler in the prefix cwd with the sources and
         # outputs as the arguments. It is assumed that it will know
         # what to do with them.
-        args = [self.compiler] + list(self.sources) + list(self.outputs)
+        args = ([self.compiler] + list(x[0] for x in self.sources) +
+                list(self.outputs))
         print args
         generate = subprocess.Popen(
             args,

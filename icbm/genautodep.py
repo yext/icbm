@@ -133,8 +133,7 @@ class JavaFile(File):
         #print "}"
 
     def DepName(self):
-        return "%s=%s:lib%s" % (
-            self.module, self.path, self.name)
+        return "%s=%s:lib%s" % (self.module, self.path, self.name)
 
 class JarFile(File):
 
@@ -153,6 +152,40 @@ class JarFile(File):
 
     def DepName(self):
         return "%s=%s:%s" % (self.module, self.path, self.name)
+
+
+PROTO_PACKAGE_RE = re.compile(r"option java_package.*\"(.*)\";")
+PROTO_CLASSNAME_RE = re.compile(r"option java_outer_classname.*\"(.*)\";")
+PROTO_IMPORT_RE = re.compile(r"import \"(.*)\";")
+
+class ProtoFile(File):
+
+    def __init__(self, module, path, name, filename):
+        self.module = module
+        self.protoname = name
+        self.path = path
+
+        proto = open(filename).read()
+
+        self.package = PROTO_PACKAGE_RE.search(proto).group(1)
+        m = PROTO_CLASSNAME_RE.search(proto)
+        if m:
+            self.name = m.group(1)
+        else:
+            self.name = name
+
+        deps = PROTO_IMPORT_RE.findall(proto)
+
+        self.classes = dict([(self.name, self)])
+
+        self.extras = list((d, os.path.abspath(os.path.join(module, d)))
+                           for d in deps)
+
+    def DepName(self):
+        return "%s=%s:lib%s" % (self.module, self.path, self.name)
+
+    def PopulateDependencies(self, packages, classes):
+        pass
 
 
 class Module(object):
@@ -206,6 +239,13 @@ def ComputeDependencies(dirs):
                         dirty = True
                     jf.stat = stat
                     module.jars.append(jf)
+                elif f.endswith(".proto"):
+                    if not jf:
+                        jf = ProtoFile(d, path, f[:-6], fname)
+                        cache[fname] = jf
+                        dirty = True
+                    jf.stat = stat
+                    module.files.setdefault(jf.package, []).append(jf)
                 # TODO: Add support for dealing with JSP imports
 
     #print >>sys.stderr, "linking", time.time()

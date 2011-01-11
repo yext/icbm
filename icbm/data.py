@@ -207,6 +207,11 @@ class DataHolder(object):
             ret = holder.TopApply(e)
             if ret:
                 target_names.append(ret)
+        # Make sure to apply all of the Generate targets. Otherwise
+        # their out's will never get considered.
+        for obj in cls._registered.itervalues():
+            if isinstance(obj, Generate):
+                obj.Apply(e)
         e.ComputeDependencies()
         for target in target_names:
             e.BuildTarget(e.GetTarget(target))
@@ -456,7 +461,7 @@ def java_deploy(module, dpath, name, binary, path=None):
     obj = JavaJar(module, dpath, name, binary)
     DataHolder.Register(module, dpath, name, obj)
 
-def generate(module, dpath, name, compiler, ins, outs, path=None):
+def generate(module, dpath, name, compiler=None, ins=None, outs=None, path=None):
     if path:
         dpath = path
     obj = Generate(module, dpath, name, compiler,

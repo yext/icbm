@@ -49,10 +49,21 @@ def main():
         "closure/selenium/lib"])
     for module in modules.itervalues():
         mname = module.name
+        # TODO: refactor this to have separate files and protos lists
+        # to avoid all of the isinstance nonsense.
         for package, farr in module.files.iteritems():
             path = farr[0].path
-            for f in farr:
+            # Process non-protos before protos, in case there is
+            # already a checked-in version, so that they don't
+            # conflict.
+            for f in sorted(
+                farr, key=lambda x: isinstance(x, genautodep.ProtoFile)):
                 name = "lib%s" % f.name
+                # Skip protos if there's already a lib for that name
+                # that is out there.
+                if isinstance(f, genautodep.ProtoFile) and data.DataHolder.Get(
+                    mname, f.DepName())):
+                    continue
                 lib = data.JavaLibrary(
                     mname, path, name,
                     list(data.FixPath(mname, path, ["%s.java" % f.name])),
@@ -60,6 +71,13 @@ def main():
                     list(c.DepName() for c in f.classes.itervalues()),
                     [])
                 data.DataHolder.Register(mname, path, name, lib)
+                if isinstance(f, genautodep.ProtoFile):
+                    gen = data.Generate(
+                        mname, path, name + "_proto",
+                        "../../tools/icbm/genproto.sh",
+                        list(data.FixPath(mname, path, ["%s.proto" % f.protoname])) + f.extras,
+                        [os.path.join(path, "%s.java" % f.name)])
+                    data.DataHolder.Register(mname, path, name + "_proto", gen)
             # Create a lib in each package as well
             lib = data.JavaLibrary(
                 mname, path, "lib",
