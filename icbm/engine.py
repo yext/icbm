@@ -198,6 +198,15 @@ class Target(object):
                 _Update(path)
         return newest[0] > os.stat(timestamp).st_mtime
 
+    @staticmethod
+    def DependenciesChanged(depstr, store):
+        if not os.path.exists(store):
+            return True
+        f = open(store)
+        with f:
+            stored = f.read()
+        return stored != depstr
+
 
 class JavaCompile(Target):
 
@@ -289,13 +298,15 @@ class JavaCompile(Target):
         # Ant is slow at figuring out that it has nothing to do, so
         # check for a build tstamp, and compare against files. If none
         # of them are newer, skip this step.
-        #
-        # TODO: This doesn't deal with newly added/removed files
-        # (e.g. due to changed dependencies). Esp the former _must_ be
-        # handled.
+
+        depstr = "%r%r%r%r%r" % (
+            self.sources, self.jars, self.data, self.main, self.flags)
+        deplist = os.path.join(self.prefix, ".deplist")
+
         tstamp_path = os.path.join(self.prefix, self.name)
-        if not self.NewerChanges([
-                self.srcprefix, self.jarprefix], tstamp_path):
+        if (not self.NewerChanges(
+                [self.srcprefix, self.jarprefix], tstamp_path) and
+            not self.DependenciesChanged(depstr, deplist)):
             return True
 
         cmd = ["ant", "-f", os.path.join(self.prefix, "compile.xml")]
@@ -314,7 +325,7 @@ class JavaCompile(Target):
             return False
 
         if not self.flags:
-            self.GenerateRunner()
+            self.Complete(deplist, depstr)
             return True
 
         # Execute the flagprocessor with all of its classpath, as well
@@ -342,9 +353,15 @@ class JavaCompile(Target):
         with f:
             f.write(output)
 
-        self.GenerateRunner()
+        self.Complete(deplist, depstr)
 
         return True
+
+    def Complete(self, deplist, depstr):
+        self.GenerateRunner()
+        f = open(deplist, "w")
+        with f:
+            f.write(depstr)
 
     def GetOutput(self, path):
         assert path == os.path.join(self.name, self.name)
