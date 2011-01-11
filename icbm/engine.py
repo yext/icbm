@@ -282,6 +282,18 @@ class JavaCompile(Target):
         # Map in any existing class files from the class cache
         engine.class_cache.PopulateFromCache(outprefix, self.sources)
 
+        with open(os.path.join(prefix, ".classpath"), "w") as f:
+            f.write("""<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+  <classpathentry kind="src" path="src"/>
+  <classpathentry kind="output" path="classes"/>
+  <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+""")
+            for jar in self.jars:
+                f.write('<classpathentry kind="lib" path="jars/%s"/>\n' %
+                        os.path.basename(jar))
+            f.write("</classpath>\n")
+
     def GenerateRunner(self):
         # Create a script to run the whole thing with appropriate
         # class path and main class.
