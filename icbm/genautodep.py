@@ -11,14 +11,16 @@ import sys
 import time
 import zipfile
 
-# Multi-line /* */ comment regex, taken from the CSS token spec
-COMMENT1_RE = re.compile(r"\/\*[^*]*\*+([^/*][^*]*\*+)*\/", re.M)
-
-# Single-line // comment
-COMMENT2_RE = re.compile(r"//.*$", re.M)
-
-# String literal
-STRING_RE = re.compile(r"\"[^\"]*\"")
+CLEAN_CODE_RE = re.compile(
+    r"""(
+    /\*.*?\*/ # Matches /* */
+      |
+    //[^\n]* # Matches //
+      |
+    "[^\\"]*(\\.[^\\"]*)*" # Matches a "-enclosed string literal
+      |
+    '[^\\']*(\\.[^\\']*)*' # Matches a '-enclosed string literal
+    )""", re.M | re.X | re.S)
 
 # Package specification
 PACKAGE_RE = re.compile(r"package (.*);")
@@ -56,18 +58,7 @@ class JavaFile(File):
         self.path = path
         self.name = name
 
-        # TODO: This cannot be done correctly using regular
-        # expressions. I think at best, we can detect potential
-        # incorrectness. For a correct impl, we'd need a
-        # tokenizer. shlex should be able to do this.
-
-        # // is fairly likely inside a string ("http://"), while /* is
-        # not, so get rid of /* first, then string, then //.
-
-        contents = COMMENT1_RE.sub("", contents)
-        contents = STRING_RE.sub("", contents)
-        contents = COMMENT2_RE.sub("", contents)
-        #print contents
+        contents = CLEAN_CODE_RE.sub("", contents)
 
         package = PACKAGE_RE.search(contents).group(1)
         imports = IMPORT_RE.findall(contents)
