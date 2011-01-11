@@ -160,6 +160,8 @@ PROTO_IMPORT_RE = re.compile(r"import \"(.*)\";")
 
 class ProtoFile(File):
 
+    _all_proto_files = {}
+
     def __init__(self, module, path, name, filename):
         self.module = module
         self.protoname = name
@@ -174,18 +176,32 @@ class ProtoFile(File):
         else:
             self.name = name
 
-        deps = PROTO_IMPORT_RE.findall(proto)
+        self.deps = PROTO_IMPORT_RE.findall(proto)
 
         self.classes = dict([(self.name, self)])
 
-        self.extras = list((d, os.path.abspath(os.path.join(module, d)))
-                           for d in deps)
+        protopath = os.path.join(path, name)
+        assert protopath not in self._all_proto_files, (
+            "Conflicting .proto files found: %s" % protopath)
+        self._all_proto_files[protopath] = self
 
     def DepName(self):
         return "%s=%s:lib%s" % (self.module, self.path, self.name)
 
     def PopulateDependencies(self, packages, classes):
-        pass
+        self.extras = []
+        for dep in self.deps:
+            assert dep.endswith(".proto"), (
+                "Dependency %s of %s does not end in .proto" %
+                (dep, self.DepName()))
+            proto = dep[:-len(".proto")]
+
+            assert proto in self._all_proto_files, (
+                "Could not find dependency %s of %s" % (dep, self.DepName()))
+            proto_file = self._all_proto_files[proto]
+
+            dep_path = os.path.abspath(os.path.join(proto_file.module, dep))
+            self.extras.append((dep, dep_path))
 
 
 class Module(object):
@@ -201,7 +217,9 @@ class Module(object):
 def ComputeDependencies(dirs):
     print >>sys.stderr, "autodep", time.time(), "...",
     try:
-        cache = cPickle.load(open("build/autodep.cache", "rb"))
+        with open("build/autodep.cache", "rb") as f:
+            cache = cPickle.load(f)
+            ProtoFile._all_proto_files = cPickle.load(f)
     except:
         cache = {}
     dirty = False
@@ -279,7 +297,9 @@ def ComputeDependencies(dirs):
                 f.PopulateDependencies(packages, classes)
 
     if dirty:
-        cPickle.dump(cache, open("build/autodep.cache", "wb"))
+        with open("build/autodep.cache", "wb") as f:
+            cPickle.dump(cache, f)
+            cPickle.dump(ProtoFile._all_proto_files, f)
 
     print >>sys.stderr, " done", time.time()
 
