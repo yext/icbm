@@ -62,7 +62,7 @@ def main():
                 # Skip protos if there's already a lib for that name
                 # that is out there.
                 if isinstance(f, genautodep.ProtoFile) and data.DataHolder.Get(
-                    mname, f.DepName())):
+                    mname, f.DepName()):
                     continue
                 lib = data.JavaLibrary(
                     mname, path, name,
