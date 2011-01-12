@@ -410,16 +410,20 @@ class JarBuild(Target):
         # all of the jars into a single jar.
         out = os.path.join(BUILD_DIR, ".%s" % self.name)
         f = zipfile.ZipFile(out, "w")
+        added = set()
         def _Add(arg, dirname, files):
             for fn in files:
                 fn = os.path.join(dirname, fn)
                 if os.path.isfile(fn):
                     f.write(fn, os.path.relpath(fn, arg))
+                    added.add(os.path.relpath(fn, arg))
         os.path.walk(prefix, _Add, prefix)
         for jar, filename in self.jars.iteritems():
             j = zipfile.ZipFile(engine.GetFilename(filename), "r")
             for info in j.infolist():
                 if info.filename.startswith("META-INF/"):
+                    continue
+                if info.filename in added:
                     continue
                 contents = j.open(info).read()
                 f.writestr(info, contents)
