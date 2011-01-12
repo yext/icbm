@@ -234,6 +234,8 @@ def ComputeDependencies(dirs):
                 continue
             if path.startswith("build") or "/build/" in path:
                 continue
+            if path and d in ("closure"):
+                continue
             for f in files:
                 if f.startswith("."):
                     continue

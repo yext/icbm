@@ -32,6 +32,7 @@ def main():
         "khan/pss/src",
         "khan/babykhan/src",
         "khan/khanmaster/src",
+        "pageshooter/src",
         "apps/src",
         "admin/src",
         "Core/jars",
@@ -44,9 +45,9 @@ def main():
         "play-common/app",
         "play-common/lib",
         "thirdparty",
+        "selenium-jars",
         "tools/gwt",
-        "closure/selenium/src",
-        "closure/selenium/lib"])
+        "closure/selenium/src"])
     for module in modules.itervalues():
         mname = module.name
         # TODO: refactor this to have separate files and protos lists
