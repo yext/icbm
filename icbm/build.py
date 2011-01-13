@@ -33,6 +33,7 @@ def main():
         "khan/babykhan/src",
         "khan/khanmaster/src",
         "pageshooter/src",
+        "scripts/src",
         "apps/src",
         "admin/src",
         "Core/jars",
