@@ -409,7 +409,12 @@ class JarBuild(Target):
         # Put together the classes dir from the compiles, as well as
         # all of the jars into a single jar.
         out = os.path.join(BUILD_DIR, ".%s" % self.name)
-        f = zipfile.ZipFile(out, "w")
+        f = open(out, "wb")
+        os.fchmod(f.fileno(), 0755)
+        f.write("""#!/bin/sh
+exec java -jar $0 "$@"
+""")
+        f = zipfile.ZipFile(f, "w")
         added = set()
         def _Add(arg, dirname, files):
             for fn in files:
