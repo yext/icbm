@@ -85,7 +85,7 @@ class JavaFile(File):
     def __repr__(self):
         return "%s(%s.%s)" % (self.__class__.__name__, self.package, self.name)
 
-    def PopulateDependencies(self, packages, classes):
+    def PopulateDependencies(self, packages, classes, protos):
         files = packages[self.package]
         for f in files:
             name = f.name
@@ -160,8 +160,6 @@ PROTO_IMPORT_RE = re.compile(r"import \"(.*)\";")
 
 class ProtoFile(File):
 
-    _all_proto_files = {}
-
     def __init__(self, module, path, name, filename):
         self.module = module
         self.protoname = name
@@ -180,15 +178,10 @@ class ProtoFile(File):
 
         self.classes = dict([(self.name, self)])
 
-        protopath = os.path.join(path, name)
-        assert protopath not in self._all_proto_files, (
-            "Conflicting .proto files found: %s" % protopath)
-        self._all_proto_files[protopath] = self
-
     def DepName(self):
         return "%s=%s:lib%s" % (self.module, self.path, self.name)
 
-    def PopulateDependencies(self, packages, classes):
+    def PopulateDependencies(self, packages, classes, protos):
         self.extras = []
         for dep in self.deps:
             assert dep.endswith(".proto"), (
@@ -196,9 +189,9 @@ class ProtoFile(File):
                 (dep, self.DepName()))
             proto = dep[:-len(".proto")]
 
-            assert proto in self._all_proto_files, (
+            assert proto in protos, (
                 "Could not find dependency %s of %s" % (dep, self.DepName()))
-            proto_file = self._all_proto_files[proto]
+            proto_file = protos[proto]
 
             dep_path = os.path.abspath(os.path.join(proto_file.module, dep))
             self.extras.append((dep, dep_path))
@@ -214,12 +207,14 @@ class Module(object):
         # List of jars
         self.jars = []
 
+        # List of protos
+        self.protos = []
+
 def ComputeDependencies(dirs):
     print >>sys.stderr, "autodep", time.time(), "...",
     try:
         with open("build/autodep.cache", "rb") as f:
             cache = cPickle.load(f)
-            ProtoFile._all_proto_files = cPickle.load(f)
     except:
         cache = {}
     dirty = False
@@ -266,6 +261,7 @@ def ComputeDependencies(dirs):
                         dirty = True
                     jf.stat = stat
                     module.files.setdefault(jf.package, []).append(jf)
+                    module.protos.append(jf)
                 # TODO: Add support for dealing with JSP imports
 
     #print >>sys.stderr, "linking", time.time()
@@ -293,15 +289,21 @@ def ComputeDependencies(dirs):
                     continue
                 classes[c] = jar
 
+    protos = {}
+    for module in modules.itervalues():
+        for proto in module.protos:
+            protofn = os.path.join(proto.path, proto.protoname)
+            assert protofn not in protos, protofn
+            protos[protofn] = proto
+
     for module in modules.itervalues():
         for farr in module.files.itervalues():
             for f in farr:
-                f.PopulateDependencies(packages, classes)
+                f.PopulateDependencies(packages, classes, protos)
 
     if dirty:
         with open("build/autodep.cache", "wb") as f:
             cPickle.dump(cache, f)
-            cPickle.dump(ProtoFile._all_proto_files, f)
 
     print >>sys.stderr, " done", time.time()
 
