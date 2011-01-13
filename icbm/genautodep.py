@@ -123,7 +123,8 @@ class JavaFile(File):
             if not isinstance(val, File):
                 if (isinstance(val, str) and not val.startswith("javax.")
                     and not val.startswith("org.w3c.dom.")
-                    and not val.startswith("org.xml.sax.")):
+                    and not val.startswith("org.xml.sax.")
+                    and not val.startswith("com.sun.org.apache.xml.internal.")):
                     print "ignoring", key, val
                 del self.classes[key]
 
@@ -279,6 +280,8 @@ def ComputeDependencies(dirs):
                 if c.startswith("org.w3c.dom."):
                     continue
                 if c.startswith("org.xml.sax."):
+                    continue
+                if c.startswith("com.sun.org.apache.xml.internal."):
                     continue
                 if c.startswith("javax.xml.parsers."):
                     continue
