@@ -306,7 +306,7 @@ def ComputeDependencies(dirs):
 
     if dirty:
         with open("build/autodep.cache", "wb") as f:
-            cPickle.dump(cache, f)
+            cPickle.dump(cache, f, -1)
 
     print >>sys.stderr, " done", time.time()
 
