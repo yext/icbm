@@ -29,6 +29,7 @@ def main():
         "kernel/src",
         "partners/src",
         "src",
+        "khan/common/src",
         "khan/pss/src",
         "khan/babykhan/src",
         "khan/khanmaster/src",
