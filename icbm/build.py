@@ -74,6 +74,19 @@ def main():
                     list(c.DepName() for c in f.classes.itervalues()),
                     [])
                 data.DataHolder.Register(mname, path, name, lib)
+
+                # Create a binary target that depends solely on the lib
+                binary = data.JavaBinary(
+                    mname, path, f.name,
+                    "%s/%s" % (path, f.name),
+                    ["%s:%s" % (path, name)],
+                    flags=True)
+                data.DataHolder.Register(mname, path, f.name, binary)
+                # Create a jar target for the binary as well
+                jar = data.JavaJar(
+                    mname, path, f.name + "_deploy", binary.FullName())
+                data.DataHolder.Register(mname, path, f.name + "_deploy", jar)
+
                 if isinstance(f, genautodep.ProtoFile):
                     gen = data.Generate(
                         mname, path, name + "_proto",

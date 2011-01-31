@@ -450,10 +450,20 @@ def java_binary(module, dpath, name, main=None, deps=None,
                 flags=False, path=None):
     if path:
         dpath = path
-    obj = JavaBinary(module, dpath, name, main, deps, flags)
-    DataHolder.Register(module, dpath, name, obj)
-    obj = JavaJar(module, dpath, name + "_deploy", obj.FullName())
-    DataHolder.Register(module, dpath, name + "_deploy", obj)
+    obj = DataHolder.Get(module, "%s:%s" % (dpath, name))
+    if not obj:
+        obj = JavaBinary(module, dpath, name, main, deps, flags)
+        DataHolder.Register(module, dpath, name, obj)
+        jar = JavaJar(module, dpath, name + "_deploy", obj.FullName())
+        DataHolder.Register(module, dpath, name + "_deploy", jar)
+
+    if main:
+        obj.main = main
+    if deps:
+        obj.deps.extend(deps)
+    if flags is not None:
+        obj.flags = flags
+
 
 def java_deploy(module, dpath, name, binary, path=None):
     if path:
