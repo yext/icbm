@@ -308,6 +308,17 @@ class JavaCompile(Target):
                 outrunner.write(text % {"main_class": self.main})
             os.chmod(runner_path, 0755)
 
+        srcdebugger = open("tools/icbm/java_debug.sh")
+        with srcdebugger:
+            text = srcdebugger.read()
+            debugger_path = os.path.join(self.prefix, "%s-debug" % self.name)
+            if not os.path.exists(os.path.dirname(debugger_path)):
+                os.makedirs(os.path.dirname(debugger_path))
+            outdebugger = open(debugger_path, "w")
+            with outdebugger:
+                outdebugger.write(text % {"main_class": self.main})
+            os.chmod(debugger_path, 0755)
+
     def Run(self, engine):
         # Ant is slow at figuring out that it has nothing to do, so
         # check for a build tstamp, and compare against files. If none
