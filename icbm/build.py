@@ -79,8 +79,7 @@ def main():
                 binary = data.JavaBinary(
                     mname, path, f.name,
                     "%s/%s" % (path, f.name),
-                    ["%s:%s" % (path, name)],
-                    flags=True)
+                    ["%s:%s" % (path, name)])
                 data.DataHolder.Register(mname, path, f.name, binary)
                 # Create a jar target for the binary as well
                 jar = data.JavaJar(
