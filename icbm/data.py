@@ -362,6 +362,30 @@ class JavaLibrary(DataHolder):
         if self.deps:
             self._LoadSpecs(self.deps)
 
+class PlayApp(DataHolder):
+
+    """Class that holds a play_app target."""
+
+    def __init__(self, module, path, name, modules, deps):
+        DataHolder.__init__(self, module, path, name)
+        self.modules = modules
+        self.deps = deps
+
+    @cache
+    def Apply(self, e):
+        deps = []
+        for depname in self.deps:
+            dep = DataHolder.Get(self.module, depname)
+            deps.append(dep.Apply(e))
+
+        c = engine.PlayCompile(self.path, self.name + ".zip", self.modules, deps)
+        e.AddTarget(c)
+        return c.Name()
+
+    TopApply = Apply
+
+    def LoadSpecs(self):
+        self._LoadSpecs(self.deps)
 
 class Generate(DataHolder):
 
@@ -487,6 +511,14 @@ def java_deploy(module, dpath, name, binary, path=None):
     obj = JavaJar(module, dpath, name, binary)
     DataHolder.Register(module, dpath, name, obj)
 
+def play_app(module, dpath, name, modules, deps=None, path=None):
+    if path:
+        dpath = path
+    obj = PlayApp(module, dpath, name, modules, [])
+    DataHolder.Register(module, dpath, name, obj)
+    if deps:
+        obj.deps.extend(deps)
+
 def generate(module, dpath, name, compiler=None, ins=None, outs=None, path=None):
     if path:
         dpath = path
@@ -543,6 +575,7 @@ def LoadTargetSpec(module, target):
         "java_library": functools.partial(java_library, module, dirname),
         "java_binary": functools.partial(java_binary, module, dirname),
         "java_deploy": functools.partial(java_deploy, module, dirname),
+        "play_app": functools.partial(play_app, module, dirname),
         "generate": functools.partial(generate, module, dirname),
         "alias": functools.partial(alias, module, dirname),
         "glob": relglob,

@@ -5,6 +5,7 @@
 __author__ = "ilia@yext.com (Ilia Mirkin)"
 
 import commands
+import glob
 import itertools
 import Queue
 import os
@@ -438,15 +439,24 @@ exec java ${JVM_ARGS} -jar $0 "$@"
                     f.write(fn, os.path.relpath(fn, arg))
                     added.add(os.path.relpath(fn, arg))
         os.path.walk(prefix, _Add, prefix)
+
+        def _Exclude(fn):
+            # Don't include manifest file or signatures
+            if fn.startswith("META-INF/"):
+                for end in ("MANIFEST.MF", ".SF", ".RSA"):
+                    if fn.endswith(end):
+                        return True
+            if fn in added:
+                return True
+            return False
+
         for jar, filename in self.jars.iteritems():
             j = zipfile.ZipFile(engine.GetFilename(filename), "r")
             for info in j.infolist():
-                if info.filename.startswith("META-INF/"):
-                    continue
-                if info.filename in added:
-                    continue
-                contents = j.open(info).read()
-                f.writestr(info, contents)
+                if not _Exclude(info.filename):
+                    contents = j.open(info).read()
+                    f.writestr(info, contents)
+
         rev = commands.getoutput("hg parent -q")
         if rev and ":" in rev:
             rev = rev.split(":")[0]
@@ -460,6 +470,75 @@ Build-Revision: %s
         f.close()
 
         os.rename(out, os.path.join(BUILD_DIR, self.name))
+
+        return True
+
+    def GetOutput(self, path):
+        assert path == self.name
+        return os.path.join(BUILD_DIR, self.name)
+
+class PlayCompile(Target):
+
+    compiler = "com.yext.play.server.PlayCompiler"
+    play_home = "thirdparty/play"
+
+    def __init__(self, path, name, modules, deps):
+        Target.__init__(self, path, name)
+        self.modules = modules
+        self.deps = deps
+
+    def AddDependencies(self, engine):
+        for dep in self.deps:
+            engine.Depend(self, dep)
+        engine.Provide(self, self.name)
+
+    def Setup(self, engine):
+        # Make the directory, set up symlinks
+        prefix = self.prefix = os.path.join(BUILD_DIR, self.name.rsplit(".zip")[0])
+        if not os.path.exists(self.prefix):
+            os.makedirs(self.prefix)
+
+    def Run(self, engine):
+        # Always run the precompilation for now
+        def _CopyPlayApp(src):
+            for dir in ("app", "conf", "public"):
+                for root, dirs, files in os.walk(os.path.join(src, dir)):
+                    dest_dir = os.path.join(self.prefix, root)
+                    if not os.path.exists(dest_dir):
+                        os.makedirs(dest_dir)
+                    for file in files:
+                        dest = os.path.join(dest_dir, file)
+                        if not os.path.exists(dest):
+                            symlink.symlink(
+                                os.path.realpath(os.path.join(root, file)),
+                                dest)
+
+        # Copy over the play modules
+        for module in self.modules:
+            _CopyPlayApp(module)
+
+        # Execute the play compiler
+        generate = subprocess.Popen(
+            ['thirdparty/play/play',
+             'precompile',
+             os.path.join(self.prefix, self.modules[0])],
+            bufsize=1,
+            close_fds=True,
+            shell=False)
+
+        if generate.wait() != 0:
+            return False
+
+        # Zip up the compiled play application
+        tmp = os.path.join(self.prefix, ".%s" % self.name)
+        f = zipfile.ZipFile(tmp, "w")
+        for root, dirs, files in os.walk(self.prefix):
+            for name in files:
+                path = os.path.join(root, name)
+                f.write(path, os.path.relpath(path, self.prefix))
+        f.close()
+
+        os.rename(tmp, os.path.join(BUILD_DIR, self.name))
 
         return True
 
