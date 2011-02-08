@@ -7,6 +7,7 @@ __author__ = "ilia@yext.com (Ilia Mirkin)"
 import optparse
 import os
 import sys
+import time
 
 import engine
 import data
@@ -14,6 +15,8 @@ import genautodep
 
 
 def main():
+    start_time = time.time()
+
     parser = optparse.OptionParser()
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose")
     (options, args) = parser.parse_args()
@@ -123,6 +126,10 @@ def main():
         d = data.DataHolder.Get(data.TOPLEVEL, target)
         d.LoadSpecs()
     success = data.DataHolder.Go(args)
+
+    elapsed_time = time.time() - start_time
+    print "\nTotal ICBM build time: %.1f seconds" % elapsed_time
+
     if not success:
         sys.exit(1)
 
