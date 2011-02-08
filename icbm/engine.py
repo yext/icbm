@@ -43,6 +43,7 @@ class Engine(object):
         self.waitor_lock = threading.Lock()
         self.done = set()
         self.waitors = []
+        self.build_visited = set()
         self.success = True
         self.class_cache = class_cache.ClassCache(
             os.path.join(BUILD_DIR, "classcache"))
@@ -53,7 +54,8 @@ class Engine(object):
                 item = self.ready_queue.get()
             except:
                 return
-            print "building", item.Name(), time.time()
+            with self.waitor_lock:
+                print "building", item.Name(), time.time()
             try:
                 item.Setup(self)
                 if not item.Run(self):
@@ -107,7 +109,8 @@ class Engine(object):
         return os.path.abspath(self.target_provides[path].GetOutput(path))
 
     def BuildTarget(self, target):
-        #print "building deps of", target.Name()
+        if target in self.build_visited:
+            return
         deps = self.target_deps.get(target, [])
         for f in deps:
             assert f in self.target_provides, "No target provides %s" % f
@@ -116,6 +119,7 @@ class Engine(object):
             self.ready_queue.put(target)
         else:
             self.waitors.append(target)
+        self.build_visited.add(target)
 
     def Go(self, workers=4):
         # Start up workers
