@@ -59,20 +59,26 @@ def abs_target(target, default_module=None):
       Error if no module can be found and none is provided.
     """
     # If the target is fully-specified, just return it.
-    if '=' in target:
+    if "=" in target:
         return target
 
+    # If the target doesn't have a : in it, assume that the "file" in
+    # the directory is actually the target name.
+    if ":" not in target and "/" in target:
+        d, t = target.rsplit("/", 1)
+        target = "%s:%s" % (d, t)
+
     # Try splitting on 'src' directory
-    elif 'src/' in target:
-        module, rt = target.split('src/')
-        return '%s=%s' % (module + 'src', rt)
+    if "src/" in target:
+        module, rt = target.split("src/")
+        return "%ssrc=%s" % (module, rt)
 
     # Ran out of guesses, use default module
     elif default_module is not None:
-        return '%s=%s' % (default_module, target)
+        return "%s=%s" % (default_module, target)
 
     else:
-        raise Exception('No module could be determined for target: ' + target)
+        raise Exception("No module could be determined for target: " + target)
 
 
 class DataHolder(object):
