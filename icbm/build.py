@@ -124,11 +124,15 @@ def main():
         data.LoadTargetSpec(data.TOPLEVEL, target)
     for target in args:
         d = data.DataHolder.Get(data.TOPLEVEL, target)
+        if not d:
+            print "Unknown target:", target
+            sys.exit(1)
         d.LoadSpecs()
     success = data.DataHolder.Go(args)
 
     elapsed_time = time.time() - start_time
-    print "\nTotal ICBM build time: %.1f seconds" % elapsed_time
+    print
+    print "Total ICBM build time: %.1f seconds" % elapsed_time
 
     if not success:
         sys.exit(1)

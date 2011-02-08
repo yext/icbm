@@ -136,7 +136,8 @@ class DataHolder(object):
           deps: List of target names that this rule depends on.
         """
         deps = list(self.Canonicalize(deps))
-        print 'loading: %s' % str(deps)
+        if VERBOSE:
+            print "loading: %s" % str(deps)
         for dep in deps:
             pdep(self.FullName(), dep)
         while len(deps) > 0:
