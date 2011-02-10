@@ -435,7 +435,8 @@ def FixPath(module, path, lst):
             yield fake_path, fake_path
 
 def java_library(module, dpath, name, path=None,
-                 files=None, jars=None, deps=None, data=None):
+                 files=None, jars=None, deps=None, data=None,
+                 jars_override=False, deps_override=False):
     if path:
         dpath = path
     obj = DataHolder.Get(module, "%s:%s" % (dpath, name))
@@ -446,9 +447,15 @@ def java_library(module, dpath, name, path=None,
     if files:
         obj.files.extend(FixPath(module, dpath, files))
     if jars:
-        obj.jars.extend(FixPath(module, dpath, jars))
+        if jars_override:
+            obj.jars = FixPath(module, dpath, jars)
+        else:
+            obj.jars.extend(FixPath(module, dpath, jars))
     if deps:
-        obj.deps.extend(deps)
+        if deps_override:
+            obj.deps = deps
+        else:
+            obj.deps.extend(deps)
     if data:
         obj.data.extend(FixPath(module, dpath, data))
 
