@@ -456,7 +456,7 @@ Main-Class: %s
 Built-By: %s
 Built-On: %s
 Build-Revision: %s
-""" % (self.main, os.getenv("USER"), time.strftime("%F %T"), rev.strip()))
+""" % (self.main, os.getenv("USER"), time.strftime("%b %d, %Y %I:%M:%S %p"), rev.strip()))
         f.close()
 
         os.rename(out, os.path.join(BUILD_DIR, self.name))
