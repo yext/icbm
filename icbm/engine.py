@@ -427,7 +427,7 @@ class JarBuild(Target):
         f = open(out, "wb")
         os.fchmod(f.fileno(), 0755)
         f.write("""#!/bin/sh
-exec java -jar $0 "$@"
+exec java ${JVM_ARGS} -jar $0 "$@"
 """)
         f = zipfile.ZipFile(f, "w")
         added = set()
