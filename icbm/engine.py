@@ -446,6 +446,10 @@ exec java ${JVM_ARGS} -jar $0 "$@"
                 for end in ("MANIFEST.MF", ".SF", ".RSA"):
                     if fn.endswith(end):
                         return True
+            # Don't include play.plugins file as this causes play to load
+            # duplicate plugins
+            if fn == "play.plugins":
+                return True
             if fn in added:
                 return True
             return False
