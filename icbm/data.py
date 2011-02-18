@@ -351,7 +351,7 @@ class JavaLibrary(DataHolder):
 
         c = engine.JavaCompile(self.path, os.path.join(self.path, self.name),
                                sources, jars,
-                               datas, None, None)
+                               datas, "", True)
         e.AddTarget(c)
         return c.Name()
 
@@ -484,7 +484,7 @@ def java_library(module, dpath, name, path=None,
         obj.data.extend(FixPath(module, dpath, data))
 
 
-def java_binary(module, dpath, name, main=None, deps=None,
+def java_binary(module, dpath, name, main="", deps=None,
                 flags=None, path=None):
     if path:
         dpath = path
