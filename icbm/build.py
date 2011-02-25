@@ -46,6 +46,7 @@ def main():
         "partners/jars",
         "khan/pss/jars",
         "closure",
+        "apache-tomcat-6.0.16/bin",
         "jetty/jetty-distribution-7.0.2.v20100331",
         "play-common/src",
         "play-common/app",

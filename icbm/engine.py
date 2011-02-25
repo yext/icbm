@@ -401,11 +401,12 @@ class JavaCompile(Target):
 
 class JarBuild(Target):
 
-    def __init__(self, path, name, target, jars, main):
+    def __init__(self, path, name, target, jars, main, premain):
         Target.__init__(self, path, name)
         self.target = target
         self.jars = dict(jars)
         self.main = main
+        self.premain = premain
 
     def AddDependencies(self, engine):
         engine.Depend(self, self.target)
@@ -464,13 +465,16 @@ exec java ${JVM_ARGS} -jar $0 "$@"
         rev = commands.getoutput("hg parent -q")
         if rev and ":" in rev:
             rev = rev.split(":")[0]
-        f.writestr("META-INF/MANIFEST.MF",
+        premain = "Premain-Class: %s\n" % self.premain if self.premain else ""
+        manifest = (
 """Manifest-Version: 1.0
 Main-Class: %s
-Built-By: %s
+%sBuilt-By: %s
 Built-On: %s
 Build-Revision: %s
-""" % (self.main, os.getenv("USER"), time.strftime("%b %d, %Y %I:%M:%S %p"), rev.strip()))
+""" % (self.main, premain, os.getenv("USER"), time.strftime("%b %d, %Y %I:%M:%S %p"), rev.strip()))
+
+        f.writestr("META-INF/MANIFEST.MF", manifest)
         f.close()
 
         os.rename(out, os.path.join(BUILD_DIR, self.name))
