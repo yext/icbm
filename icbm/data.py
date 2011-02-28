@@ -380,6 +380,9 @@ class PlayApp(DataHolder):
             dep = DataHolder.Get(self.module, depname)
             deps.append(dep.Apply(e))
 
+        for module in self.modules:
+            assert os.path.exists(module), "play module not found: %s" % module
+
         c = engine.PlayCompile(self.path, self.name + ".zip", self.modules, deps)
         e.AddTarget(c)
         return c.Name()
