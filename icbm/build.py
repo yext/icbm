@@ -59,12 +59,14 @@ def main():
         # TODO: refactor this to have separate files and protos lists
         # to avoid all of the isinstance nonsense.
         for package, farr in module.files.iteritems():
-            path = farr[0].path
             # Process non-protos before protos, in case there is
             # already a checked-in version, so that they don't
             # conflict.
+            filemap = {}
             for f in sorted(
                 farr, key=lambda x: isinstance(x, genautodep.ProtoFile)):
+                path = f.path
+                filemap.setdefault(f.path, []).append(f)
                 name = "lib%s" % f.name
                 # Skip protos if there's already a lib for that name
                 # that is out there.
@@ -78,6 +80,7 @@ def main():
                     list(c.DepName() for c in f.classes.itervalues()),
                     [])
                 data.DataHolder.Register(mname, path, name, lib)
+                #print "reg %s=%s:%s" % (mname, path, name)
 
                 # Create a binary target that depends solely on the lib
                 binary = data.JavaBinary(
@@ -98,13 +101,14 @@ def main():
                         [os.path.join(path, "%s.java" % f.name)])
                     data.DataHolder.Register(mname, path, name + "_proto", gen)
             # Create a lib in each package as well
-            lib = data.JavaLibrary(
-                mname, path, "lib",
-                [],
-                [],
-                list(f.DepName() for f in farr),
-                [])
-            data.DataHolder.Register(mname, path, "lib", lib)
+            for path, file_arr in filemap.iteritems():
+                lib = data.JavaLibrary(
+                    mname, path, "lib",
+                    [],
+                    [],
+                    list(f.DepName() for f in file_arr),
+                    [])
+                data.DataHolder.Register(mname, path, "lib", lib)
             #print mname, path, "lib"
         for jar in module.jars:
             lib = data.JavaLibrary(
