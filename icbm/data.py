@@ -68,10 +68,21 @@ def abs_target(target, default_module=None):
         d, t = target.rsplit("/", 1)
         target = "%s:%s" % (d, t)
 
+    # If the target ends with .java, then likely the user just
+    # autocompleted and wants the target without .java, so strip it
+    # out.
+    if target.endswith(".java"):
+        target = target[:-5]
+
     # Try splitting on 'src' directory
     if "src/" in target:
         module, rt = target.split("src/")
         return "%ssrc=%s" % (module, rt)
+
+    # The test directory doesn't have a src dir, so add a special
+    # case syntactic sugar to add "=" after test.
+    elif target.startswith("test/"):
+        return "test=%s" % (target[5:])
 
     # Ran out of guesses, use default module
     elif default_module is not None:
