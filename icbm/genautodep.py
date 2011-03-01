@@ -79,13 +79,14 @@ class JavaFile(File):
         #print package
         #print classes
 
-        self.classes = classes
+        self.parsed_classes = classes
         self.package = package
 
     def __repr__(self):
         return "%s(%s.%s)" % (self.__class__.__name__, self.package, self.name)
 
     def PopulateDependencies(self, packages, classes, protos):
+        self.classes = dict(self.parsed_classes)
         files = packages[self.package]
         for f in files:
             name = f.name
