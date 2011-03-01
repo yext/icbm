@@ -126,7 +126,7 @@ class JavaFile(File):
                     and not val.startswith("org.w3c.dom.")
                     and not val.startswith("org.xml.sax.")
                     and not val.startswith("com.sun.org.apache.xml.internal.")):
-                    print "ignoring", key, val
+                    print "Ignoring unresolved dependency from", repr(self), ":", val
                 del self.classes[key]
 
         #print self.DepName(), "{"
@@ -230,6 +230,8 @@ def ComputeDependencies(dirs):
             if path.startswith("src"):
                 continue
             if path.startswith("build") or "/build/" in path:
+                continue
+            if path.startswith("jars-build") or "/jars-build/" in path:
                 continue
             if path and d in ("closure",):
                 continue
