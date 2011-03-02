@@ -364,7 +364,7 @@ class JavaLibrary(DataHolder):
 
         c = engine.JavaCompile(self.path, os.path.join(self.path, self.name),
                                sources, jars,
-                               datas, "", True)
+                               datas, "", False)
         e.AddTarget(c)
         return c.Name()
 
