@@ -574,13 +574,16 @@ class PlayCompile(Target):
 
 class Generate(Target):
 
-    def __init__(self, path, name, compiler, sources, outputs):
+    def __init__(self, path, name, compiler, sources, outputs, deps):
         Target.__init__(self, path, name)
         self.sources = sources
         self.outputs = set(outputs)
         self.compiler = compiler
+        self.deps = deps
 
     def AddDependencies(self, engine):
+        for dep in self.deps:
+            engine.Depend(self, dep)
         for fake, real in self.sources:
             if not real.startswith("/"):
                 engine.Depend(self, real)

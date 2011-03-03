@@ -414,11 +414,19 @@ class Generate(DataHolder):
         self.compiler = compiler
         self.ins = ins
         self.outs = outs
+        self.deps = []
 
     @cache
     def Apply(self, e):
+        # TODO(rich): Make generate take java binary / library as ins
+        # instead of using deps.
+        deps = []
+        for depname in self.deps:
+            dep = DataHolder.Get(self.module, depname)
+            deps.append(dep.Apply(e))
+
         target = engine.Generate(self.path, self.name, self.compiler,
-                                 self.ins, self.outs)
+                                 self.ins, self.outs, deps)
         e.AddTarget(target)
         return target.Name()
 
@@ -541,13 +549,15 @@ def play_app(module, dpath, name, modules, deps=None, path=None, data=None):
     if data:
         obj.data.extend(FixPath(module, dpath, data))
 
-def generate(module, dpath, name, compiler=None, ins=None, outs=None, path=None):
+def generate(module, dpath, name, compiler=None, ins=None, outs=None, path=None, deps=None):
     if path:
         dpath = path
     obj = Generate(module, dpath, name, compiler,
                    list(FixPath(module, dpath, ins)),
                    map(lambda x: x[0], FixPath(module, dpath, outs)))
     DataHolder.Register(module, dpath, name, obj)
+    if deps:
+        obj.deps.extend(deps)
 
 def alias(module, path, name, deps):
     obj = Alias(module, path, name, deps)
