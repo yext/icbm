@@ -231,6 +231,9 @@ class JavaCompile(Target):
         for fake, real in self.sources.iteritems():
             if not real.startswith("/"):
                 engine.Depend(self, real)
+        for fake, real in self.data.iteritems():
+            if not real.startswith("/"):
+                engine.Depend(self, real)
         engine.Provide(self, self.name)
 
     def Setup(self, engine):
@@ -490,14 +493,18 @@ class PlayCompile(Target):
     compiler = "com.yext.play.server.PlayCompiler"
     play_home = "thirdparty/play"
 
-    def __init__(self, path, name, modules, deps):
+    def __init__(self, path, name, modules, deps, data):
         Target.__init__(self, path, name)
         self.modules = modules
         self.deps = deps
+        self.data = dict(data)
 
     def AddDependencies(self, engine):
         for dep in self.deps:
             engine.Depend(self, dep)
+        for fake, real in self.data.iteritems():
+            if not real.startswith("/"):
+                engine.Depend(self, real)
         engine.Provide(self, self.name)
 
     def Setup(self, engine):
@@ -536,6 +543,17 @@ class PlayCompile(Target):
 
         if generate.wait() != 0:
             return False
+
+        # Copy all the data file as well
+        for data, filename in self.data.iteritems():
+            srcprefix = os.path.join(self.prefix, "src")
+            path = os.path.join(srcprefix, os.path.dirname(data))
+            if not os.path.exists(path):
+                os.makedirs(path)
+            dest = os.path.join(path, os.path.basename(data))
+            if os.path.exists(dest):
+                os.unlink(dest)
+            symlink.symlink(engine.GetFilename(filename), dest)
 
         # Zip up the compiled play application
         tmp = os.path.join(self.prefix, ".%s" % self.name)

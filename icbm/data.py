@@ -379,14 +379,16 @@ class PlayApp(DataHolder):
 
     """Class that holds a play_app target."""
 
-    def __init__(self, module, path, name, modules, deps):
+    def __init__(self, module, path, name, modules, deps, data):
         DataHolder.__init__(self, module, path, name)
         self.modules = modules
         self.deps = deps
+        self.data = data
 
     @cache
     def Apply(self, e):
         deps = []
+        datas = set(self.data)
         for depname in self.deps:
             dep = DataHolder.Get(self.module, depname)
             deps.append(dep.Apply(e))
@@ -394,7 +396,7 @@ class PlayApp(DataHolder):
         for module in self.modules:
             assert os.path.exists(module), "play module not found: %s" % module
 
-        c = engine.PlayCompile(self.path, self.name + ".zip", self.modules, deps)
+        c = engine.PlayCompile(self.path, self.name + ".zip", self.modules, deps, datas)
         e.AddTarget(c)
         return c.Name()
 
@@ -529,13 +531,15 @@ def java_deploy(module, dpath, name, binary, path=None, premain=None):
     obj = JavaJar(module, dpath, name, binary, premain)
     DataHolder.Register(module, dpath, name, obj)
 
-def play_app(module, dpath, name, modules, deps=None, path=None):
+def play_app(module, dpath, name, modules, deps=None, path=None, data=None):
     if path:
         dpath = path
-    obj = PlayApp(module, dpath, name, modules, [])
+    obj = PlayApp(module, dpath, name, modules, [], [])
     DataHolder.Register(module, dpath, name, obj)
     if deps:
         obj.deps.extend(deps)
+    if data:
+        obj.data.extend(FixPath(module, dpath, data))
 
 def generate(module, dpath, name, compiler=None, ins=None, outs=None, path=None):
     if path:
