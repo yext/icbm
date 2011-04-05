@@ -498,7 +498,7 @@ def java_library(module, dpath, name, path=None,
         obj.files.extend(FixPath(module, dpath, files))
     if jars:
         if jars_override:
-            obj.jars = FixPath(module, dpath, jars)
+            obj.jars = list(FixPath(module, dpath, jars))
         else:
             obj.jars.extend(FixPath(module, dpath, jars))
     if deps:
