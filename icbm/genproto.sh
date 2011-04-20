@@ -2,6 +2,8 @@
 
 if [ `uname -s` = "Linux" -a `uname -m` = "x86_64" ]; then
   PROTOC=${PROTOC:-`dirname $0`/protoc}
+elif [ `uname -s` = "Darwin" -a `uname -m` = "x86_64" ]; then
+  PROTOC=${PROTOC:-`dirname $0`/protoc-darwin-x86_64}
 else
   PROTOC=${PROTOC:-protoc}
 fi
