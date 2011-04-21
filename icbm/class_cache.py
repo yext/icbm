@@ -54,6 +54,13 @@ class ClassCache(object):
         if reldir.startswith(os.sep):
             reldir = reldir[1:]
         dst = os.path.join(self.cache_dir, reldir)
+
+        # It's dangerous to have an outer class in the cache without its nested
+        # classes because ant's depend and javac tasks might not realize the
+        # nested classes are missing. Thus, always copy over nested classes
+        # before copying in the main classes.
+        files.sort(key=lambda f: "$" not in f)
+
         for f in files:
             fname = os.path.join(dirname, f)
             if os.path.islink(fname):
