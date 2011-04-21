@@ -122,7 +122,9 @@ class Engine(object):
             self.waitors.append(target)
         self.build_visited.add(target)
 
-    def Go(self, workers=4):
+    # TODO(eefi): Restore default workers to 4 when parallelism problems have
+    # been fixed.
+    def Go(self, workers=1):
         # Start up workers
         for i in xrange(workers):
             t = threading.Thread(target=self.Worker)
