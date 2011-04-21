@@ -61,4 +61,5 @@ class ClassCache(object):
             elif os.path.isfile(fname) and f.endswith(".class"):
                 if not os.path.exists(dst):
                     os.makedirs(dst)
-                shutil.copy2(fname, os.path.join(self.cache_dir, reldir))
+                os.rename(fname, os.path.join(dst, f))
+                symlink.symlink(os.path.abspath(os.path.join(dst, f)), fname)
