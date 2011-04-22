@@ -7,8 +7,7 @@ __author__ = "ilia@yext.com (Ilia Mirkin)"
 import re
 import os
 import shutil
-
-import symlink
+import tempfile
 
 class ClassCache(object):
 
@@ -42,12 +41,8 @@ class ClassCache(object):
             for f in os.listdir(cachedir):
                 if not re.match(classpat, f):
                     continue
-                target = os.path.join(class_dir, dirname, f)
-                if os.path.exists(target):
-                    os.unlink(target)
-                symlink.symlink(os.path.abspath(os.path.join(cachedir, f)),
-                                os.path.join(class_dir, dirname, f))
-
+                _copy_if_newer(os.path.join(cachedir, f),
+                               os.path.join(class_dir, dirname, f))
 
     def _UpdateCache(self, class_dir, dirname, files):
         reldir = dirname[len(class_dir):]
@@ -63,10 +58,26 @@ class ClassCache(object):
 
         for f in files:
             fname = os.path.join(dirname, f)
-            if os.path.islink(fname):
-                continue
-            elif os.path.isfile(fname) and f.endswith(".class"):
+            if os.path.isfile(fname) and f.endswith(".class"):
                 if not os.path.exists(dst):
                     os.makedirs(dst)
-                os.rename(fname, os.path.join(dst, f))
-                symlink.symlink(os.path.abspath(os.path.join(dst, f)), fname)
+                _copy_if_newer(fname, os.path.join(dst, f), atomic=True)
+
+
+# shutil.copy2() sometimes doesn't copy the mtime exactly.
+_MTIME_TOLERANCE = 0.000001
+
+def _copy_if_newer(src, dst, atomic=False):
+    if os.path.exists(dst):
+        src_stat = os.stat(src)
+        dst_stat = os.stat(dst)
+        if dst_stat.st_mtime >= src_stat.st_mtime - _MTIME_TOLERANCE:
+            # dst is same age as or newer than src, so don't overwrite it.
+            return
+    if atomic:
+        temp_fd, temp_filename = tempfile.mkstemp(dir=os.path.dirname(dst))
+        os.close(temp_fd)
+        shutil.copy2(src, temp_filename)
+        os.rename(temp_filename, dst)
+    else:
+        shutil.copy2(src, dst)
