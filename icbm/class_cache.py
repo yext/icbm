@@ -4,6 +4,7 @@
 
 __author__ = "ilia@yext.com (Ilia Mirkin)"
 
+import errno
 import re
 import os
 import shutil
@@ -59,8 +60,7 @@ class ClassCache(object):
         for f in files:
             fname = os.path.join(dirname, f)
             if os.path.isfile(fname) and f.endswith(".class"):
-                if not os.path.exists(dst):
-                    os.makedirs(dst)
+                _ensure_dir_exists(dst)
                 _copy_if_newer(fname, os.path.join(dst, f), atomic=True)
 
 
@@ -81,3 +81,16 @@ def _copy_if_newer(src, dst, atomic=False):
         os.rename(temp_filename, dst)
     else:
         shutil.copy2(src, dst)
+
+
+def _ensure_dir_exists(dst):
+    if os.path.isdir(dst):
+        return
+    try:
+        os.makedirs(dst)
+    except OSError as e:
+        if e.errno == errno.EEXIST and os.path.isdir(dst):
+            # Some concurrent process made the directory for us, so we're good.
+            return
+        # Something legitimately went wrong.
+        raise
