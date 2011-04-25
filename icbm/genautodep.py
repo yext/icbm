@@ -17,6 +17,9 @@ CLEAN_CODE_RE = re.compile(
       |
     //[^\n]* # Matches //
       |
+    # Matches a class-looking reference inside of a "-enclosed string literal
+    "(?P<repl>(?:com|org|net|javax)\.[a-zA-Z0-9_\.]*\.[A-Z][A-Za-z0-9_]+)"
+      |
     "[^\\"]*(\\.[^\\"]*)*" # Matches a "-enclosed string literal
       |
     '[^\\']*(\\.[^\\']*)*' # Matches a '-enclosed string literal
@@ -58,7 +61,7 @@ class JavaFile(File):
         self.path = path
         self.name = name
 
-        contents = CLEAN_CODE_RE.sub("", contents)
+        contents = CLEAN_CODE_RE.sub(lambda x: x.group("repl") or "", contents)
 
         package = PACKAGE_RE.search(contents).group(1)
         imports = IMPORT_RE.findall(contents)
