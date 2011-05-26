@@ -290,6 +290,7 @@ class JavaCompile(Target):
         # Map in any existing class files from the class cache
         engine.class_cache.PopulateFromCache(outprefix, self.sources)
 
+        # Create an eclipse file
         with open(os.path.join(prefix, ".classpath"), "w") as f:
             f.write("""<?xml version="1.0" encoding="UTF-8"?>
 <classpath>
@@ -301,6 +302,21 @@ class JavaCompile(Target):
                 f.write('<classpathentry kind="lib" path="jars/%s"/>\n' %
                         os.path.basename(jar))
             f.write("</classpath>\n")
+
+        # Create a findbugs file
+        with open(os.path.join(prefix, "findbugs.fbp"), "w") as f:
+            loc = os.path.abspath(prefix)
+            f.write('<Project projectName="">\n')
+            for jar in self.jars:
+                f.write("<AuxClasspathEntry>%s</AuxClasspathEntry>\n" %
+                        os.path.join(loc, "jars", os.path.basename(jar)))
+            f.write("<Jar>%s</Jar>\n" % os.path.join(loc, "classes"))
+            f.write("<SrcDir>%s</SrcDir>\n" % os.path.join(loc, "src"))
+            f.write("""<SuppressionFilter>
+<LastVersion value="-1" relOp="NEQ"/>
+</SuppressionFilter>
+""")
+            f.write("</Project>\n")
 
     def GenerateRunner(self):
         # Create a script to run the whole thing with appropriate
