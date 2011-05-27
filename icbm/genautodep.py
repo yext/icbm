@@ -44,6 +44,33 @@ IMPORT_PARSE_RE = re.compile(r"\b([A-Z]\w+)\b")
 IMPORT_PACKAGE_RE = re.compile(
     r"((TARGUS)?[a-z0-9\._]+)\.([A-Z\*][A-Za-z0-9_]*)")
 
+# Figures out if we should ignore a missing dependency based on the fq name
+IGNORE_MISSING_DEP_RE = re.compile(
+    r"""^(
+    javax
+      |
+    org\.w3c\.dom
+      |
+    org\.xml\.sax
+      |
+    com\.sun\.org\.apache\.xml\.internal
+    )\.""", re.X)
+
+# Figures out if we should ignore classes that are inside of a JAR for
+# the purposes of depending on those jars.
+IGNORE_JAR_CLASSES_RE = re.compile(
+    r"""^(
+    javax\.xml\.parsers
+      |
+    javax\.xml\.xpath
+      |
+    org\.w3c\.dom
+      |
+    org\.xml\.sax
+      |
+    com\.sun\.org\.apache\.xml\.internal
+    )\.""", re.X)
+
 class File(object):
     """
     """
@@ -140,10 +167,7 @@ class JavaFile(File):
             if name in self.classes:
                 continue
 
-            if (not fqdn.startswith("javax.") and
-                not fqdn.startswith("org.w3c.dom.") and
-                not fqdn.startswith("org.xml.sax.") and
-                not fqdn.startswith("com.sun.org.apache.xml.internal.")):
+            if not IGNORE_MISSING_DEP_RE.match(fqdn):
                 print "Ignoring unresolved dependency from", repr(self), ":", fqdn
 
         #print self.DepName(), "{"
@@ -298,15 +322,7 @@ def ComputeDependencies(dirs):
             for c in jar.classes:
                 #assert c not in classes, "%s: %r, %r" % (c, classes[c], jar)
                 # Prefer non-obscure jars
-                if c.startswith("org.w3c.dom."):
-                    continue
-                if c.startswith("org.xml.sax."):
-                    continue
-                if c.startswith("com.sun.org.apache.xml.internal."):
-                    continue
-                if c.startswith("javax.xml.parsers."):
-                    continue
-                if c.startswith("javax.xml.xpath."):
+                if IGNORE_JAR_CLASSES_RE.match(c):
                     continue
                 if c in classes and module.name not in (
                     "Core/jars", "kernel/jars", "partners/jars"):
