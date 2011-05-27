@@ -14,6 +14,30 @@ import data
 import genautodep
 
 
+def RegisterJavaLibrary(module, f):
+    name = "lib%s" % f.name
+    lib = data.JavaLibrary(
+        module.name, f.path, name,
+        list(data.FixPath(module.name, f.path, ["%s.java" % f.name])),
+        [],
+        list(c.DepName() for c in f.classes.itervalues()),
+        [])
+    data.DataHolder.Register(module.name, f.path, name, lib)
+    #print "reg %s=%s:%s" % (module.name, f.path, name)
+
+    # Create a binary target that depends solely on the lib
+    binary = data.JavaBinary(
+        module.name, f.path, f.name,
+        "%s/%s" % (f.path, f.name),
+        ["%s:%s" % (f.path, name)])
+    data.DataHolder.Register(module.name, f.path, f.name, binary)
+
+    # Create a jar target for the binary as well
+    jar = data.JavaJar(
+        module.name, f.path, f.name + "_deploy", binary.FullName())
+    data.DataHolder.Register(module.name, f.path, f.name + "_deploy", jar)
+
+
 def main():
     start_time = time.time()
 
@@ -57,50 +81,39 @@ def main():
         "closure/selenium/src"])
     for module in modules.itervalues():
         mname = module.name
-        # TODO: refactor this to have separate files and protos lists
-        # to avoid all of the isinstance nonsense.
         for package, farr in module.files.iteritems():
             # Process non-protos before protos, in case there is
             # already a checked-in version, so that they don't
             # conflict.
             filemap = {}
-            for f in sorted(
-                farr, key=lambda x: isinstance(x, genautodep.ProtoFile)):
-                path = f.path
+
+            java_files = []
+            proto_files = []
+            for f in farr:
                 filemap.setdefault(f.path, []).append(f)
-                name = "lib%s" % f.name
+                if isinstance(f, genautodep.ProtoFile):
+                    proto_files.append(f)
+                else:
+                    java_files.append(f)
+
+            for f in java_files:
+                RegisterJavaLibrary(module, f)
+
+            for f in proto_files:
                 # Skip protos if there's already a lib for that name
                 # that is out there.
-                if isinstance(f, genautodep.ProtoFile) and data.DataHolder.Get(
-                    mname, f.DepName()):
+                if data.DataHolder.Get(mname, f.DepName()):
                     continue
-                lib = data.JavaLibrary(
-                    mname, path, name,
-                    list(data.FixPath(mname, path, ["%s.java" % f.name])),
-                    [],
-                    list(c.DepName() for c in f.classes.itervalues()),
-                    [])
-                data.DataHolder.Register(mname, path, name, lib)
-                #print "reg %s=%s:%s" % (mname, path, name)
 
-                # Create a binary target that depends solely on the lib
-                binary = data.JavaBinary(
-                    mname, path, f.name,
-                    "%s/%s" % (path, f.name),
-                    ["%s:%s" % (path, name)])
-                data.DataHolder.Register(mname, path, f.name, binary)
-                # Create a jar target for the binary as well
-                jar = data.JavaJar(
-                    mname, path, f.name + "_deploy", binary.FullName())
-                data.DataHolder.Register(mname, path, f.name + "_deploy", jar)
+                RegisterJavaLibrary(module, f)
 
-                if isinstance(f, genautodep.ProtoFile):
-                    gen = data.Generate(
-                        mname, path, name + "_proto",
-                        "../../tools/icbm/genproto.sh",
-                        list(data.FixPath(mname, path, ["%s.proto" % f.protoname])) + f.extras,
-                        [os.path.join(path, "%s.java" % f.name)])
-                    data.DataHolder.Register(mname, path, name + "_proto", gen)
+                gen = data.Generate(
+                    mname, f.path, f.name + "_proto",
+                    "../../tools/icbm/genproto.sh",
+                    list(data.FixPath(mname, f.path, ["%s.proto" % f.protoname])) + f.extras,
+                    [os.path.join(f.path, "%s.java" % f.name)])
+                data.DataHolder.Register(mname, f.path, f.name + "_proto", gen)
+
             # Create a lib in each package as well
             for path, file_arr in filemap.iteritems():
                 lib = data.JavaLibrary(
