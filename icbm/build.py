@@ -79,6 +79,7 @@ def main():
         "selenium-jars",
         "tools/gwt",
         "closure/selenium/src"])
+
     for module in modules.itervalues():
         mname = module.name
         for package, farr in module.files.iteritems():

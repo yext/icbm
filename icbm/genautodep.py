@@ -89,15 +89,12 @@ class JavaFile(File):
         return "%s(%s.%s)" % (self.__class__.__name__, self.package, self.name)
 
     def PopulateDependencies(self, packages, classes, protos):
-        self.classes = dict(self.parsed_classes)
+        self.classes = dict(x for x in self.parsed_classes.iteritems() if x[1])
         files = packages[self.package]
         for f in files:
             name = f.name
-            if name in self.classes and self.classes[name] is None:
+            if name in self.parsed_classes and name not in self.classes:
                 self.classes[name] = f
-        for name, val in self.classes.items():
-            if val is None:
-                del self.classes[name]
 
         if self.name in self.classes:
             del self.classes[self.name]
