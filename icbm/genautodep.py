@@ -8,6 +8,7 @@ import cPickle
 import os
 import re
 import sys
+import threading
 import time
 import zipfile
 
@@ -342,8 +343,10 @@ def ComputeDependencies(dirs):
                 f.PopulateDependencies(packages, classes, protos)
 
     if dirty:
-        with open("build/autodep.cache", "wb") as f:
-            cPickle.dump(cache, f, -1)
+        def _WriteCache():
+            with open("build/autodep.cache", "wb") as f:
+                cPickle.dump(cache, f, -1)
+        threading.Thread(target=_WriteCache).start()
 
     print >>sys.stderr, " done", time.time()
 
