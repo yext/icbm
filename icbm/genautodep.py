@@ -102,45 +102,49 @@ class JavaFile(File):
         self.parsed_classes = state[5]
 
     def PopulateDependencies(self, packages, classes, protos):
-        self.classes = dict(x for x in self.parsed_classes.iteritems() if x[1])
-        files = packages[self.package]
-        for f in files:
-            name = f.name
-            if name in self.parsed_classes and name not in self.classes:
-                self.classes[name] = f
+        self.classes = {}
 
-        if self.name in self.classes:
-            del self.classes[self.name]
+        fqdns = {}
+        other = set()
+
+        for name, fqdn in self.parsed_classes.iteritems():
+            if name == self.name:
+                continue
+            elif fqdn:
+                fqdns[name] = fqdn
+            else:
+                other.add(name)
 
         # Go through the rest of the classes and map class name -> JavaFile
-        for name, fqdn in self.classes.iteritems():
-            if not isinstance(fqdn, File):
-                m = IMPORT_PACKAGE_RE.match(fqdn)
-                assert m, fqdn
-                package = m.group(1)
-                if package not in packages:
-                    continue
-                files = packages[package]
-                for f in files:
-                    if f.name == name:
-                        self.classes[name] = f
-
-        for name, fqdn in self.classes.iteritems():
-            if not isinstance(fqdn, File):
-                m = IMPORT_PACKAGE_RE.match(fqdn)
-                assert m, fqdn
+        for name, fqdn in fqdns.iteritems():
+            m = IMPORT_PACKAGE_RE.match(fqdn)
+            assert m, fqdn
+            package = m.group(1)
+            # Do we know about this package from parsing the various files?
+            pmap = packages.get(package, {})
+            if name in pmap:
+                self.classes[name] = pmap[name]
+            else:
+                # Couldn't match any existing files, check the passed
+                # in classes (aka JARs).
                 match = m.group(0)
                 if match in classes:
                     self.classes[name] = classes[match]
 
-        for key, val in self.classes.items():
-            if not isinstance(val, File):
-                if (isinstance(val, str) and not val.startswith("javax.")
-                    and not val.startswith("org.w3c.dom.")
-                    and not val.startswith("org.xml.sax.")
-                    and not val.startswith("com.sun.org.apache.xml.internal.")):
-                    print "Ignoring unresolved dependency from", repr(self), ":", val
-                del self.classes[key]
+        pmap = packages[self.package]
+        for name in other:
+            if name in pmap:
+                self.classes[name] = pmap[name]
+
+        for name, fqdn in fqdns.iteritems():
+            if name in self.classes:
+                continue
+
+            if (not fqdn.startswith("javax.") and
+                not fqdn.startswith("org.w3c.dom.") and
+                not fqdn.startswith("org.xml.sax.") and
+                not fqdn.startswith("com.sun.org.apache.xml.internal.")):
+                print "Ignoring unresolved dependency from", repr(self), ":", fqdn
 
         #print self.DepName(), "{"
         #for c in sorted(self.classes):
@@ -285,7 +289,8 @@ def ComputeDependencies(dirs):
     packages = {}
     for module in modules.itervalues():
         for package in module.files:
-            packages.setdefault(package, []).extend(module.files[package])
+            packages.setdefault(package, {}).update(dict(
+                    (f.name, f) for f in module.files[package]))
 
     classes = {}
     for module in modules.itervalues():
