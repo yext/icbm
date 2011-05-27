@@ -84,9 +84,22 @@ class JavaFile(File):
 
         self.parsed_classes = classes
         self.package = package
+        self.stat = None
 
     def __repr__(self):
         return "%s(%s.%s)" % (self.__class__.__name__, self.package, self.name)
+
+    def __getstate__(self):
+        return (self.module, self.path, self.name, self.package, self.stat,
+                self.parsed_classes)
+
+    def __setstate__(self, state):
+        self.module = state[0]
+        self.path = state[1]
+        self.name = state[2]
+        self.package = state[3]
+        self.stat = state[4]
+        self.parsed_classes = state[5]
 
     def PopulateDependencies(self, packages, classes, protos):
         self.classes = dict(x for x in self.parsed_classes.iteritems() if x[1])
