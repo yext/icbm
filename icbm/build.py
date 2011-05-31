@@ -100,7 +100,11 @@ def main():
                     if m:
                         appdir = f.path[:m.end(1)]
                         app_dirs.setdefault(appdir, []).append(f)
-                        continue
+                        # We want to allow tests to depend on these,
+                        # so keep processing as usual. In the future,
+                        # some sort of compromise will need to be
+                        # made, as this can still lead to namespace collisions.
+                        #continue
                 filemap.setdefault(f.path, []).append(f)
                 if isinstance(f, genautodep.ProtoFile):
                     proto_files.append(f)
