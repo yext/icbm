@@ -6,6 +6,7 @@ __author__ = "ilia@yext.com (Ilia Mirkin)"
 
 import optparse
 import os
+import re
 import sys
 import time
 
@@ -13,6 +14,8 @@ import engine
 import data
 import genautodep
 
+
+APPDIR_RE = re.compile(r"(/app)($|/)")
 
 def RegisterJavaLibrary(module, f):
     name = "lib%s" % f.name
@@ -82,6 +85,7 @@ def main():
 
     for module in modules.itervalues():
         mname = module.name
+        app_dirs = {}
         for package, farr in module.files.iteritems():
             # Process non-protos before protos, in case there is
             # already a checked-in version, so that they don't
@@ -91,6 +95,12 @@ def main():
             java_files = []
             proto_files = []
             for f in farr:
+                if mname == "src":
+                    m = APPDIR_RE.search(f.path)
+                    if m:
+                        appdir = f.path[:m.end(1)]
+                        app_dirs.setdefault(appdir, []).append(f)
+                        continue
                 filemap.setdefault(f.path, []).append(f)
                 if isinstance(f, genautodep.ProtoFile):
                     proto_files.append(f)
@@ -124,7 +134,21 @@ def main():
                     list(f.DepName() for f in file_arr),
                     [])
                 data.DataHolder.Register(mname, path, "lib", lib)
-            #print mname, path, "lib"
+
+        for path, file_arr in app_dirs.iteritems():
+            deps = set()
+            for f in file_arr:
+                for c in f.classes.itervalues():
+                    if not APPDIR_RE.search(c.path):
+                        deps.add(c.DepName())
+            lib = data.JavaLibrary(
+                mname, path, "app_deps",
+                [],
+                [],
+                list(deps),
+                [])
+            data.DataHolder.Register(mname, path, "app_deps", lib)
+
         for jar in module.jars:
             lib = data.JavaLibrary(
                 mname, "", jar.name, [],
