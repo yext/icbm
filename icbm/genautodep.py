@@ -69,6 +69,8 @@ IGNORE_MISSING_DEP_RE = re.compile(
 # the purposes of depending on those jars.
 IGNORE_JAR_CLASSES_RE = re.compile(
     r"""^(
+    javax\.xml\.datatype
+      |
     javax\.xml\.parsers
       |
     javax\.xml\.xpath
@@ -121,6 +123,7 @@ class JavaFile(File):
         self.parsed_classes = classes
         self.package = package
         self.stat = None
+        self.namespaces = [package]
 
     def __repr__(self):
         return "%s(%s.%s)" % (self.__class__.__name__, self.package, self.name)
@@ -136,9 +139,10 @@ class JavaFile(File):
         self.package = state[3]
         self.stat = state[4]
         self.parsed_classes = state[5]
+        self.namespaces = [self.package]
 
     def PopulateDependencies(self, packages, classes, protos):
-        self.classes = {}
+        name_classes = {}
 
         fqdns = {}
         other = set()
@@ -159,29 +163,34 @@ class JavaFile(File):
             # Do we know about this package from parsing the various files?
             pmap = packages.get(package, {})
             if name in pmap:
-                self.classes[name] = pmap[name]
+                name_classes[name] = pmap[name]
             else:
                 # Couldn't match any existing files, check the passed
                 # in classes (aka JARs).
                 match = m.group(0)
                 if match in classes:
-                    self.classes[name] = classes[match]
+                    name_classes[name] = classes[match]
 
-        pmap = packages[self.package]
-        for name in other:
-            if name in pmap:
-                self.classes[name] = pmap[name]
+        for ns in self.namespaces:
+            pmap = packages.get(ns)
+            if not pmap:
+                continue
+            for name in other:
+                if name in pmap:
+                    name_classes[name] = pmap[name]
 
         for name, fqdn in fqdns.iteritems():
-            if name in self.classes:
+            if name in name_classes:
                 continue
 
             if not IGNORE_MISSING_DEP_RE.match(fqdn):
                 print "Ignoring unresolved dependency from", repr(self), ":", fqdn
 
+        self.classes = name_classes.values()
+
         #print self.DepName(), "{"
-        #for c in sorted(self.classes):
-        #    print "  ", c, ":", self.classes[c].DepName()
+        #for c in sorted(self.classes, key=lambda x: x.name):
+        #    print "  ", c, ":", c.DepName()
         #print "}"
 
     def DepName(self):
@@ -229,7 +238,7 @@ class ProtoFile(File):
 
         self.deps = PROTO_IMPORT_RE.findall(proto)
 
-        self.classes = dict([(self.name, self)])
+        self.classes = [self]
 
     def DepName(self):
         return "%s=%s:lib%s" % (self.module, self.path, self.name)
@@ -250,6 +259,69 @@ class ProtoFile(File):
             self.extras.append((dep, dep_path))
 
 
+class JSPFile(JavaFile):
+
+    PAGE_RE = re.compile(r"<%@\s*page[^%]*import=.*?%>", re.M | re.S)
+    CODE_RE = re.compile(r"<%=?(.*?)%>", re.M | re.S)
+    IMPORT_RE = re.compile(r"import=\"([^\"]*)\"")
+
+    def __init__(self, module, path, name, filename):
+        self.module = module
+        self.path = path
+        self.name = name
+
+        jsp = open(filename).read()
+
+        imports = []
+        full_refs = []
+        local_refs = []
+
+        # TODO(ilia): Attempt to reuse the JavaFile constructor.
+
+        # <@page ... import="..." %>
+        m = self.PAGE_RE.search(jsp)
+        if m:
+            pagetag = m.group()
+            for m in self.IMPORT_RE.finditer(pagetag):
+                imports.extend(x.strip() for x in m.group(1).split(","))
+
+        # Find any full class references in the code
+        for contents in self.CODE_RE.finditer(jsp):
+            c = contents.group(1)
+            full_refs.extend(FULL_RE.findall(c))
+            local_refs.extend(LOCAL_RE.findall(c))
+
+        classes = dict((m, None) for m in local_refs)
+
+        self.namespaces = []
+
+        for m in imports + full_refs:
+            if (m.startswith("java.") or
+                m.startswith("com.sun.management") or
+                m.startswith("com.sun.net.httpserver")):
+                continue
+            if m.endswith(".*"):
+                self.namespaces.append(m[:-2])
+            else:
+                match = IMPORT_PARSE_RE.search(m)
+                if match:
+                    classes[match.group(1)] = m
+
+        self.parsed_classes = classes
+        self.stat = None
+
+    def __getstate__(self):
+        return (self.module, self.path, self.name, self.namespaces,
+                self.parsed_classes, self.stat)
+
+    def __setstate__(self, state):
+        self.module = state[0]
+        self.path = state[1]
+        self.name = state[2]
+        self.namespaces = state[3]
+        self.parsed_classes = state[4]
+        self.stat = state[5]
+
 class Module(object):
 
     def __init__(self, name):
@@ -262,6 +334,8 @@ class Module(object):
 
         # List of protos
         self.protos = []
+
+        self.jsps = []
 
 def ComputeDependencies(dirs):
     print >>sys.stderr, "autodep", time.time(), "...",
@@ -321,7 +395,13 @@ def ComputeDependencies(dirs):
                     jf.stat = stat
                     module.files.setdefault(jf.package, []).append(jf)
                     module.protos.append(jf)
-                # TODO: Add support for dealing with JSP imports
+                elif f.endswith(".jsp") or f.endswith(".jspf"):
+                    if not jf:
+                        jf = JSPFile(d, path, f.rsplit(".", 1)[0], fname)
+                        cache[fname] = jf
+                        dirty = True
+                    jf.stat = stat
+                    module.jsps.append(jf)
 
     #print >>sys.stderr, "linking", time.time()
     packages = {}
@@ -354,6 +434,8 @@ def ComputeDependencies(dirs):
         for farr in module.files.itervalues():
             for f in farr:
                 f.PopulateDependencies(packages, classes, protos)
+        for f in module.jsps:
+            f.PopulateDependencies(packages, classes, protos)
 
     if dirty:
         def _WriteCache():

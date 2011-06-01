@@ -504,6 +504,75 @@ Build-Revision: %s
         assert path == self.name
         return os.path.join(BUILD_DIR, self.name)
 
+class WarBuild(Target):
+
+    def __init__(self, path, name, data, target, jars):
+        Target.__init__(self, path, name)
+        self.data = dict(data)
+        self.target = target
+        self.jars = dict(jars)
+
+    def AddDependencies(self, engine):
+        engine.Depend(self, self.target)
+        for fake, real in self.data.iteritems():
+            if not real.startswith("/"):
+                engine.Depend(self, real)
+        engine.Provide(self, self.name)
+
+    def Setup(self, engine):
+        pass
+
+    def Run(self, engine):
+        prefix = os.path.join(BUILD_DIR, self.target, "classes")
+        # Verify that we actually need to do something. Otherwise
+        # leave it alone.
+        tstamp_path = os.path.join(BUILD_DIR, self.name)
+        if not self.NewerChanges(
+            self.jars.values() + self.data.values() + [prefix], tstamp_path):
+            return True
+
+        # Put together the classes dir from the compiles, as well as
+        # all of the jars into a single jar.
+        out = os.path.join(BUILD_DIR, ".%s" % self.name)
+        f = zipfile.ZipFile(out, "w")
+        for fake, fn in self.data.iteritems():
+            fn = engine.GetFilename(fn)
+            if os.path.isfile(fn):
+                f.write(fn, fake)
+
+        def _Add(arg, dirname, files):
+            for fn in files:
+                fn = os.path.join(dirname, fn)
+                if os.path.isfile(fn):
+                    f.write(fn, os.path.join("WEB-INF/classes", os.path.relpath(fn, arg)))
+        os.path.walk(prefix, _Add, prefix)
+
+        for jar, fn in self.jars.iteritems():
+            fn = engine.GetFilename(fn)
+            f.write(fn, os.path.join("WEB-INF/lib", jar))
+
+        rev = commands.getoutput("hg parent -q")
+        if rev and ":" in rev:
+            rev = rev.split(":")[0]
+        manifest = (
+"""Manifest-Version: 1.0
+Built-By: %s
+Built-On: %s
+Build-Revision: %s
+""" % (os.getenv("USER"), time.strftime("%b %d, %Y %I:%M:%S %p"), rev.strip()))
+
+        f.writestr("META-INF/MANIFEST.MF", manifest)
+        f.close()
+
+        os.rename(out, os.path.join(BUILD_DIR, self.name))
+
+        return True
+
+    def GetOutput(self, path):
+        assert path == self.name
+        return os.path.join(BUILD_DIR, self.name)
+
+
 class PlayCompile(Target):
 
     def __init__(self, path, name, modules, deps, data, play_home):

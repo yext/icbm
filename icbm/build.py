@@ -23,7 +23,7 @@ def RegisterJavaLibrary(module, f):
         module.name, f.path, name,
         list(data.FixPath(module.name, f.path, ["%s.java" % f.name])),
         [],
-        list(c.DepName() for c in f.classes.itervalues()),
+        list(c.DepName() for c in f.classes),
         [])
     data.DataHolder.Register(module.name, f.path, name, lib)
     #print "reg %s=%s:%s" % (module.name, f.path, name)
@@ -68,6 +68,7 @@ def main():
         "scripts/src",
         "apps/src",
         "admin/src",
+        "admin/WebContent",
         "Core/jars",
         "kernel/jars",
         "partners/jars",
@@ -75,6 +76,7 @@ def main():
         "closure",
         "apache-tomcat-6.0.16/bin",
         "jetty/jetty-distribution-7.0.2.v20100331",
+        "taglib-jars",
         "play-common/src",
         "play-common/app",
         "play-common/lib",
@@ -142,7 +144,7 @@ def main():
         for path, file_arr in app_dirs.iteritems():
             deps = set()
             for f in file_arr:
-                for c in f.classes.itervalues():
+                for c in f.classes:
                     if not APPDIR_RE.search(c.path):
                         deps.add(c.DepName())
             lib = data.JavaLibrary(
@@ -166,6 +168,15 @@ def main():
             list(f.DepName() for f in module.jars),
             [])
         data.DataHolder.Register(mname, "", "jars", lib)
+
+        if module.jsps:
+            lib = data.JavaLibrary(
+                mname, "", "jsp_deps",
+                [],
+                [],
+                list(c.DepName() for jsp in module.jsps for c in jsp.classes),
+                [])
+            data.DataHolder.Register(mname, "", "jsp_deps", lib)
 
     for target in args:
         # load the corresponding spec files

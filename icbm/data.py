@@ -375,6 +375,31 @@ class JavaLibrary(DataHolder):
         if self.deps:
             self._LoadSpecs(self.deps)
 
+class JavaWar(DataHolder):
+
+    """Class that holds a java_war target."""
+
+    def __init__(self, module, path, name, data, binary):
+        DataHolder.__init__(self, module, path, name)
+        self.data = data
+        self.binary = binary
+
+    @cache
+    def Apply(self, e):
+        dep = DataHolder.Get(self.module, self.binary)
+        assert dep, "%s not found" % self.binary
+        assert isinstance(dep, JavaBinary)
+        dep.Apply(e)
+        w = engine.WarBuild(self.path, self.name + ".war", self.data, dep.name, dep.jars)
+        e.AddTarget(w)
+        return w.Name()
+
+    TopApply = Apply
+
+    def LoadSpecs(self):
+        if self.binary:
+            self._LoadSpecs([self.binary])
+
 class PlayApp(DataHolder):
 
     """Class that holds a play_app target."""
@@ -541,6 +566,21 @@ def java_deploy(module, dpath, name, binary, path=None, premain=None):
     obj = JavaJar(module, dpath, name, binary, premain)
     DataHolder.Register(module, dpath, name, obj)
 
+def java_war(module, dpath, name, data, deps=None, path=None):
+    if path:
+        dpath = path
+    if deps:
+        binary = JavaBinary(module, dpath, name + "_deps",
+                            None, deps, flags=False)
+        DataHolder.Register(module, dpath, name + "_deps", binary)
+    else:
+        binary = None
+
+    war = JavaWar(module, dpath, name,
+                  list(FixPath(module, dpath, data)),
+                  binary.FullName())
+    DataHolder.Register(module, dpath, name, war)
+
 def play_app(module, dpath, name, modules, deps=None, path=None, data=None, play_home="thirdparty/play"):
     if path:
         dpath = path
@@ -609,6 +649,7 @@ def LoadTargetSpec(module, target):
         "java_library": functools.partial(java_library, module, dirname),
         "java_binary": functools.partial(java_binary, module, dirname),
         "java_deploy": functools.partial(java_deploy, module, dirname),
+        "java_war": functools.partial(java_war, module, dirname),
         "play_app": functools.partial(play_app, module, dirname),
         "generate": functools.partial(generate, module, dirname),
         "alias": functools.partial(alias, module, dirname),
