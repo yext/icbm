@@ -216,7 +216,7 @@ class ProtoFile(File):
         if m:
             self.name = m.group(1)
         else:
-            self.name = name
+            self.name = "%s%s" % (name[0].upper(), name[1:])
 
         self.deps = PROTO_IMPORT_RE.findall(proto)
 
