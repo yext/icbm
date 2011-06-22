@@ -55,6 +55,14 @@ IGNORE_MISSING_DEP_RE = re.compile(
     org\.xml\.sax
       |
     com\.sun\.org\.apache\.xml\.internal
+      |
+    play
+      |
+    javassist
+      |
+    org\.allcolor\.yahp\.converter
+      |
+    groovy
     )\.""", re.X)
 
 # Figures out if we should ignore classes that are inside of a JAR for
@@ -275,6 +283,8 @@ def ComputeDependencies(dirs):
             if path.startswith("build") or "/build/" in path:
                 continue
             if path.startswith("jars-build") or "/jars-build/" in path:
+                continue
+            if path.startswith("play"):
                 continue
             if path and d in ("closure",):
                 continue

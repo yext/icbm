@@ -506,13 +506,12 @@ Build-Revision: %s
 
 class PlayCompile(Target):
 
-    play_home = "thirdparty/play"
-
-    def __init__(self, path, name, modules, deps, data):
+    def __init__(self, path, name, modules, deps, data, play_home):
         Target.__init__(self, path, name)
         self.modules = modules
         self.deps = deps
         self.data = dict(data)
+        self.play_home = play_home
 
     def AddDependencies(self, engine):
         for dep in self.deps:
@@ -549,7 +548,7 @@ class PlayCompile(Target):
 
         # Execute the play compiler
         generate = subprocess.Popen(
-            ['thirdparty/play/play',
+            [self.play_home + '/play',
              'precompile',
              os.path.join(self.prefix, self.modules[0])],
             bufsize=1,
