@@ -506,7 +506,6 @@ Build-Revision: %s
 
 class PlayCompile(Target):
 
-    compiler = "com.yext.play.server.PlayCompiler"
     play_home = "thirdparty/play"
 
     def __init__(self, path, name, modules, deps, data):
