@@ -288,6 +288,8 @@ def ComputeDependencies(dirs):
                 continue
             if path and d in ("closure",):
                 continue
+            if "/tmp" in path:
+                continue
             for f in files:
                 if f.startswith("."):
                     continue
