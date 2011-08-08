@@ -219,7 +219,6 @@ class ProtoFile(File):
 
         proto = open(filename).read()
 
-        print filename
         self.package = PROTO_PACKAGE_RE.search(proto).group(1)
         m = PROTO_CLASSNAME_RE.search(proto)
         if m:
