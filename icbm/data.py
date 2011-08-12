@@ -410,9 +410,10 @@ class Generate(DataHolder):
 
     """Class that holds a generate target."""
 
-    def __init__(self, module, path, name, compiler, ins, outs):
+    def __init__(self, module, path, name, compiler, args, ins, outs):
         DataHolder.__init__(self, module, path, name)
         self.compiler = compiler
+        self.args = args
         self.ins = ins
         self.outs = outs
         self.deps = []
@@ -426,7 +427,7 @@ class Generate(DataHolder):
             dep = DataHolder.Get(self.module, depname)
             deps.append(dep.Apply(e))
 
-        target = engine.Generate(self.path, self.name, self.compiler,
+        target = engine.Generate(self.path, self.name, self.compiler, self.args,
                                  self.ins, self.outs, deps)
         e.AddTarget(target)
         return target.Name()
@@ -550,10 +551,10 @@ def play_app(module, dpath, name, modules, deps=None, path=None, data=None, play
     if data:
         obj.data.extend(FixPath(module, dpath, data))
 
-def generate(module, dpath, name, compiler=None, ins=None, outs=None, path=None, deps=None):
+def generate(module, dpath, name, compiler=None, args=None, ins=None, outs=None, path=None, deps=None):
     if path:
         dpath = path
-    obj = Generate(module, dpath, name, compiler,
+    obj = Generate(module, dpath, name, compiler, args,
                    list(FixPath(module, dpath, ins)),
                    map(lambda x: x[0], FixPath(module, dpath, outs)))
     DataHolder.Register(module, dpath, name, obj)

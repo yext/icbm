@@ -588,11 +588,12 @@ class PlayCompile(Target):
 
 class Generate(Target):
 
-    def __init__(self, path, name, compiler, sources, outputs, deps):
+    def __init__(self, path, name, compiler, args, sources, outputs, deps):
         Target.__init__(self, path, name)
         self.sources = sources
         self.outputs = set(outputs)
         self.compiler = compiler
+        self.args = args or []
         self.deps = deps
 
     def AddDependencies(self, engine):
@@ -634,7 +635,7 @@ class Generate(Target):
         # Execute the compiler in the prefix cwd with the sources and
         # outputs as the arguments. It is assumed that it will know
         # what to do with them.
-        args = ([self.compiler] + list(x[0] for x in self.sources) +
+        args = ([self.compiler] + self.args + list(x[0] for x in self.sources) +
                 list(self.outputs))
         print args
         generate = subprocess.Popen(

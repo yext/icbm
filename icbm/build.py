@@ -124,7 +124,7 @@ def main():
 
                 gen = data.Generate(
                     mname, f.path, f.name + "_proto",
-                    "../../tools/icbm/genproto.sh",
+                    "../../tools/icbm/genproto.sh", None,
                     list(data.FixPath(mname, f.path, ["%s.proto" % f.protoname])) + f.extras,
                     [os.path.join(f.path, "%s.java" % f.name)])
                 data.DataHolder.Register(mname, f.path, f.name + "_proto", gen)
