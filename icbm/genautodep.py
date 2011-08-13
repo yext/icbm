@@ -36,7 +36,7 @@ IMPORT_RE = re.compile(r"import(?: static)? (.*);")
 LOCAL_RE = re.compile(r"(?!\.).\b([A-Z]\w+)\b")
 
 # Fully-qualified class reference
-FULL_RE = re.compile(r"\b(?:com|org|net|javax)\.[a-zA-Z0-9_\.]*\.[A-Z][A-Za-z0-9_]+\b")
+FULL_RE = re.compile(r"(?!\.).\b((?:com|org|net|javax)\.[a-zA-Z0-9_\.]*\.[A-Z][A-Za-z0-9_]+)\b")
 
 # Class reference inside of an import
 IMPORT_PARSE_RE = re.compile(r"\b([A-Z]\w+)\b")
