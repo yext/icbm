@@ -341,8 +341,6 @@ def ComputeDependencies(dirs):
                 if c in classes and module.name not in (
                     "Core/jars", "kernel/jars", "partners/jars"):
                     continue
-                if c in classes and jar.name == "plovr":
-                    continue
                 classes[c] = jar
 
     protos = {}
