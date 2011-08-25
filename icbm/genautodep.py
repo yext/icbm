@@ -322,6 +322,56 @@ class JSPFile(JavaFile):
         self.parsed_classes = state[4]
         self.stat = state[5]
 
+class GroovyFile(JavaFile):
+
+    CODE_RE_1 = re.compile(r"%{(.*?)}%")
+    CODE_RE_2 = re.compile(r"[\#\$]{(.*?)}")
+
+    def __init__(self, module, path, name, filename):
+        self.module = module
+        self.path = path
+        self.name = name
+
+        groovy = open(filename).read()
+
+        full_refs = []
+        for contents in self.CODE_RE_1.finditer(groovy):
+            c = contents.group(1)
+            full_refs.extend(FULL_RE.findall(c))
+        for contents in self.CODE_RE_2.finditer(groovy):
+            c = contents.group(1)
+            full_refs.extend(FULL_RE.findall(c))
+
+        self.package = path.replace("/", ".")
+        self.namespaces = []
+        classes = {}
+
+        for m in full_refs:
+            if (m.startswith("java.") or
+                m.startswith("com.sun.management") or
+                m.startswith("com.sun.net.httpserver")):
+                continue
+            match = IMPORT_PARSE_RE.search(m)
+            if match:
+                classes[match.group(1)] = m
+
+        self.parsed_classes = classes
+        self.stat = None
+
+    def __getstate__(self):
+        return (self.module, self.path, self.name, self.package,
+                self.parsed_classes, self.stat)
+
+    def __setstate__(self, state):
+        self.module = state[0]
+        self.path = state[1]
+        self.name = state[2]
+        self.package = state[3]
+        self.parsed_classes = state[4]
+        self.stat = state[5]
+        self.namespaces = []
+
+
 class Module(object):
 
     def __init__(self, name):
@@ -402,6 +452,13 @@ def ComputeDependencies(dirs):
                         dirty = True
                     jf.stat = stat
                     module.jsps.append(jf)
+                elif "/app/views/" in path:
+                    if not jf:
+                        jf = GroovyFile(d, path, f, fname)
+                        cache[fname] = jf
+                        dirty = True
+                    jf.stat = stat
+                    module.files.setdefault(jf.package, []).append(jf)
 
     #print >>sys.stderr, "linking", time.time()
     packages = {}
