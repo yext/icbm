@@ -43,7 +43,7 @@ IMPORT_PARSE_RE = re.compile(r"\b([A-Z]\w+)\b")
 
 # Finds the (likely) package name from an import
 IMPORT_PACKAGE_RE = re.compile(
-    r"((TARGUS)?[a-z0-9\._]+)\.([A-Z\*][A-Za-z0-9_]*)")
+    r"((TARGUS)?[a-z0-9\._]+(\.DNS)?)\.([A-Z\*][A-Za-z0-9_]*)")
 
 # Figures out if we should ignore a missing dependency based on the fq name
 IGNORE_MISSING_DEP_RE = re.compile(
