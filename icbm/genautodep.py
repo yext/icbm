@@ -63,6 +63,8 @@ IGNORE_MISSING_DEP_RE = re.compile(
     org\.allcolor\.yahp\.converter
       |
     groovy
+      |
+    com\.microsoft\.adcenter\.api\.customermanagement\.Entities
     )\.""", re.X)
 
 # Figures out if we should ignore classes that are inside of a JAR for
