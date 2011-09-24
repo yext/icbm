@@ -123,6 +123,9 @@ def main():
                     continue
 
                 RegisterJavaLibrary(module, f)
+                # Autodep doesn't find the dependency on protobufs.
+                data.DataHolder.Get(mname, f.DepName()).deps.append(
+                    "Core/jars=:protobuf-java-2.3.0")
 
                 gen = data.Generate(
                     mname, f.path, f.name + "_proto",
