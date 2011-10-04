@@ -326,8 +326,8 @@ class JSPFile(JavaFile):
 
 class GroovyFile(JavaFile):
 
-    CODE_RE_1 = re.compile(r"%{(.*?)}%")
-    CODE_RE_2 = re.compile(r"[\#\$]{(.*?)}")
+    CODE_RE_1 = re.compile(r"%{(.*?)}%", re.M | re.S)
+    CODE_RE_2 = re.compile(r"[\#\$]{(.*?)}", re.M | re.S)
 
     def __init__(self, module, path, name, filename):
         self.module = module
