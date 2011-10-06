@@ -82,7 +82,6 @@ def main():
         "play-common/lib",
         "thirdparty",
         "selenium-jars",
-        "tools/gwt",
         "closure/selenium/src"])
 
     for module in modules.itervalues():
