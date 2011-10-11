@@ -66,6 +66,7 @@ def main():
         "khan/khanmaster/src",
         "pageshooter/src",
         "scripts/src",
+        "sales_server/src",
         "apps/src",
         "admin/src",
         "admin/WebContent",
