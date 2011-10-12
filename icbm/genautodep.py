@@ -128,7 +128,11 @@ class JavaFile(File):
         self.namespaces = [package]
 
     def __repr__(self):
-        return "%s(%s.%s)" % (self.__class__.__name__, self.package, self.name)
+        try:
+          return "%s(%s.%s)" % (self.__class__.__name__, self.package, self.name)
+        except:
+          print self.name
+          raise
 
     def __getstate__(self):
         return (self.module, self.path, self.name, self.package, self.stat,
