@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.6
 #
 # Copyright 2010 Yext, Inc. All Rights Reserved.
 
