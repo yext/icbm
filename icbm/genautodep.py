@@ -482,7 +482,7 @@ def ComputeDependencies(dirs):
                 if IGNORE_JAR_CLASSES_RE.match(c):
                     continue
                 if c in classes and module.name not in (
-                    "Core/jars", "kernel/jars", "partners/jars"):
+                    "Core/jars",):
                     continue
                 classes[c] = jar
 

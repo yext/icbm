@@ -56,7 +56,6 @@ def main():
 
     modules = genautodep.ComputeDependencies([
         "Core/src",
-        "kernel/src",
         "src",
         "test",
         "khan/common/src",
@@ -70,7 +69,6 @@ def main():
         "admin/src",
         "admin/WebContent",
         "Core/jars",
-        "kernel/jars",
         "khan/pss/jars",
         "closure",
         "apache-tomcat-6.0.16/bin",
