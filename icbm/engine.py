@@ -481,7 +481,8 @@ exec java ${JVM_ARGS} -jar $0 "$@"
                     contents = j.open(info).read()
                     f.writestr(info, contents)
 
-        rev = commands.getoutput("hg parent -q")
+        # Clear VERSIONER_PYTHON_VERSION for mac, so that hg can use the default python version
+        rev = commands.getoutput("unset VERSIONER_PYTHON_VERSION; hg parent -q")
         if rev and ":" in rev:
             rev = rev.split(":")[0]
         premain = "Premain-Class: %s\n" % self.premain if self.premain else ""
@@ -551,7 +552,8 @@ class WarBuild(Target):
             fn = engine.GetFilename(fn)
             f.write(fn, os.path.join("WEB-INF/lib", jar))
 
-        rev = commands.getoutput("hg parent -q")
+        # Clear VERSIONER_PYTHON_VERSION for mac, so that hg can use the default python version
+        rev = commands.getoutput("unset VERSIONER_PYTHON_VERSION; hg parent -q")
         if rev and ":" in rev:
             rev = rev.split(":")[0]
         manifest = (
