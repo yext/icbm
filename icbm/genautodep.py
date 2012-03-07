@@ -264,6 +264,8 @@ class ProtoFile(File):
             dep_path = os.path.abspath(os.path.join(proto_file.module, dep))
             self.extras.append((dep, dep_path))
 
+            proto_file.PopulateDependencies(packages, classes, protos)
+            self.extras.extend(proto_file.extras)
 
 class JSPFile(JavaFile):
 
