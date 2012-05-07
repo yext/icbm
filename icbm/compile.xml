@@ -20,7 +20,6 @@
       <compilerarg value="-Xlint:-path"/>
       <compilerarg value="-Xlint:-serial" />
       <compilerarg value="-Xlint:-unchecked" />
-      <compilerarg value="-Xlint:-fallthrough" />
       <!-- ANTLR generates lexers that aren't Xlint:cast clean. -->
       <compilerarg value="-Xlint:-cast" />
       <compilerarg value="-Werror"/>
