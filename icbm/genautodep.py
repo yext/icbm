@@ -460,7 +460,7 @@ def ComputeDependencies(dirs):
                         dirty = True
                     jf.stat = stat
                     module.jsps.append(jf)
-                elif "/app/views/" in path:
+                elif "/app/views" in path:
                     if not jf:
                         jf = GroovyFile(d, path, f, fname)
                         cache[fname] = jf
