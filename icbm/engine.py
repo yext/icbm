@@ -482,9 +482,10 @@ exec java ${JVM_ARGS} -jar $0 "$@"
                     f.writestr(info, contents)
 
         # Clear VERSIONER_PYTHON_VERSION for mac, so that hg can use the default python version
-        rev = commands.getoutput("unset VERSIONER_PYTHON_VERSION; hg parent -q")
+        rev = commands.getoutput("unset VERSIONER_PYTHON_VERSION; hg parent --template '{rev}:{node}\\n'")
+        rev_hash = ''
         if rev and ":" in rev:
-            rev = rev.split(":")[0]
+            rev, rev_hash = rev.split(":")
         premain = "Premain-Class: %s\n" % self.premain if self.premain else ""
         manifest = (
 """Manifest-Version: 1.0
@@ -492,7 +493,8 @@ Main-Class: %s
 %sBuilt-By: %s
 Built-On: %s
 Build-Revision: %s
-""" % (self.main, premain, os.getenv("USER"), time.strftime("%b %d, %Y %I:%M:%S %p"), rev.strip()))
+Build-Revision-Hash: %s
+""" % (self.main, premain, os.getenv("USER"), time.strftime("%b %d, %Y %I:%M:%S %p"), rev.strip(), rev_hash))
 
         f.writestr("META-INF/MANIFEST.MF", manifest)
         f.close()
