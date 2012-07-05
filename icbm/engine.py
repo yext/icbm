@@ -494,7 +494,14 @@ Main-Class: %s
 Built-On: %s
 Build-Revision: %s
 Build-Revision-Hash: %s
-""" % (self.main, premain, os.getenv("USER"), time.strftime("%b %d, %Y %I:%M:%S %p"), rev.strip(), rev_hash))
+Yext-Jar: %s
+""" %  (self.main, 
+        premain, 
+        os.getenv("USER"), 
+        time.strftime("%b %d, %Y %I:%M:%S %p"), 
+        rev.strip(), 
+        rev_hash, 
+        self.target))
 
         f.writestr("META-INF/MANIFEST.MF", manifest)
         f.close()
