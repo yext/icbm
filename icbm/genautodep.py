@@ -260,6 +260,7 @@ class ProtoFile(File):
             assert proto in protos, (
                 "Could not find dependency %s of %s" % (dep, self.DepName()))
             proto_file = protos[proto]
+            self.classes.append(proto_file)
 
             dep_path = os.path.abspath(os.path.join(proto_file.module, dep))
             self.extras.append((dep, dep_path))
