@@ -62,7 +62,6 @@ def main():
         "khan/pss/src",
         "khan/babykhan/src",
         "khan/khanmaster/src",
-        "pageshooter/src",
         "scripts/src",
         "sales_server/src",
         "apps/src",
