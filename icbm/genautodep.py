@@ -331,6 +331,52 @@ class JSPFile(JavaFile):
         self.parsed_classes = state[4]
         self.stat = state[5]
 
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, self.name)
+
+class XmlClassFile(JavaFile):
+
+    CLASS_RE = re.compile(r"<[^<]*-class>(.*?)</[^<]*-class>")
+
+    def __init__(self, module, path, name, filename):
+        self.module = module
+        self.path = path
+        self.name = name
+
+        contents = open(filename).read()
+
+        full_refs = self.CLASS_RE.findall(contents)
+
+        classes = {}
+
+        for m in full_refs:
+            if (m.startswith("java.") or
+                m.startswith("com.sun.management") or
+                m.startswith("com.sun.net.httpserver")):
+                continue
+            match = IMPORT_PARSE_RE.search(m)
+            if match:
+                classes[match.group(1)] = m
+
+        self.namespaces = []
+        self.parsed_classes = classes
+        self.stat = None
+
+    def __getstate__(self):
+        return (self.module, self.path, self.name, self.namespaces,
+                self.parsed_classes, self.stat)
+
+    def __setstate__(self, state):
+        self.module = state[0]
+        self.path = state[1]
+        self.name = state[2]
+        self.namespaces = state[3]
+        self.parsed_classes = state[4]
+        self.stat = state[5]
+
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, self.name)
+
 class GroovyFile(JavaFile):
 
     CODE_RE_1 = re.compile(r"%{(.*?)}%", re.M | re.S)
@@ -457,6 +503,20 @@ def ComputeDependencies(dirs):
                 elif f.endswith(".jsp") or f.endswith(".jspf"):
                     if not jf:
                         jf = JSPFile(d, path, f.rsplit(".", 1)[0], fname)
+                        cache[fname] = jf
+                        dirty = True
+                    jf.stat = stat
+                    module.jsps.append(jf)
+                elif f.endswith(".tld"):
+                    if not jf:
+                        jf = XmlClassFile(d, path, f.rsplit(".", 1)[0], fname)
+                        cache[fname] = jf
+                        dirty = True
+                    jf.stat = stat
+                    module.jsps.append(jf)
+                elif "WEB-INF" in path and f == "web.xml":
+                    if not jf:
+                        jf = XmlClassFile(d, path, f.rsplit(".", 1)[0], fname)
                         cache[fname] = jf
                         dirty = True
                     jf.stat = stat
