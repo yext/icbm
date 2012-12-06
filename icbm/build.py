@@ -76,6 +76,7 @@ def main():
         "fbprofile/WebContent",
         "jetty/src",
         "Core/jars",
+        "taglib-jars",
         "khan/pss/jars",
         "closure/tools/src",
         "closure",
