@@ -68,7 +68,6 @@ def main():
         "apps/src",
         "admin/src",
         "admin/WebContent",
-        "scoreboard/WebContent",
         "sales/WebContent",
         "emails/WebContent",
         "taskprocessing/WebContent",
