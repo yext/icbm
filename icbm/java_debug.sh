@@ -4,4 +4,4 @@
 # needed
 
 BASE=`dirname $0`
-exec jdb -sourcepath ${BASE}/src -classpath ${BASE}/classes:${BASE}/jars/* ${JVM_ARGS} %(main_class)s "$@"
+exec jdb -sourcepath ${BASE}/src -classpath ${BASE}/classes:${BASE}/jars/* -Dapple.awt.UIElement=true ${JVM_ARGS} %(main_class)s "$@"

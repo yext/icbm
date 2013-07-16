@@ -4,4 +4,4 @@
 # needed
 
 BASE=`dirname $0`
-exec java -cp ${BASE}/classes:${BASE}/jars/* ${JVM_ARGS} %(main_class)s "$@"
+exec java -cp ${BASE}/classes:${BASE}/jars/* -Dapple.awt.UIElement=true ${JVM_ARGS} %(main_class)s "$@"
