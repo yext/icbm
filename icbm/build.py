@@ -1,9 +1,10 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python2.7
 #
 # Copyright 2010 Yext, Inc. All Rights Reserved.
 
 __author__ = "ilia@yext.com (Ilia Mirkin)"
 
+import ConfigParser
 import optparse
 import os
 import re
@@ -49,45 +50,26 @@ def main():
     (options, args) = parser.parse_args()
     data.VERBOSE = options.verbose
 
+    config = ConfigParser.SafeConfigParser(allow_no_value=True)
+    # Module paths (the options of the modules section) must be case sensitive.
+    config.optionxform = str
+    config.read("icbm.cfg")
+    module_paths = []
+    if config.has_section("modules"):
+        module_paths = [path for path, _ in config.items("modules")]
+    if not module_paths:
+        print "ERROR: No modules specified in icbm.cfg."
+        sys.exit(1)
+    if config.has_option("java", "flags_by_default"):
+        data.JAVA_BINARY_FLAGS_DEFAULT = config.getboolean(
+            "java", "flags_by_default")
+
     try:
         os.mkdir(engine.BUILD_DIR)
     except:
         pass
 
-    modules = genautodep.ComputeDependencies([
-        "Core/src",
-        "src",
-        "test",
-        "khan/common/src",
-        "khan/pss/src",
-        "khan/babykhan/src",
-        "khan/khanmaster/src",
-        "scripts/src",
-        "sales_server/src",
-        "apps/WebContent",
-        "apps/src",
-        "admin/src",
-        "admin/WebContent",
-        "sales/WebContent",
-        "emails/WebContent",
-        "taskprocessing/WebContent",
-        "fbprofile/src",
-        "fbprofile/WebContent",
-        "jetty/src",
-        "Core/jars",
-        "taglib-jars",
-        "khan/pss/jars",
-        "closure/tools/src",
-        "closure",
-        "apache-tomcat-6.0.16/lib",
-        "apache-tomcat-6.0.16/bin",
-        "jetty/jetty-distribution-7.0.2.v20100331",
-        "play-common/src",
-        "play-common/app",
-        "play-common/lib",
-        "thirdparty",
-        "selenium-jars",
-        "closure/selenium/src"])
+    modules = genautodep.ComputeDependencies(module_paths)
 
     for module in modules.itervalues():
         mname = module.name

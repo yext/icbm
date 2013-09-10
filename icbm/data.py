@@ -25,6 +25,7 @@ def cache(f):
     return _Wrapper
 
 VERBOSE = True
+JAVA_BINARY_FLAGS_DEFAULT = False
 
 printed = set()
 def pdep(a, b):
@@ -243,7 +244,7 @@ class JavaBinary(DataHolder):
         DataHolder.__init__(self, module, path, name)
         self.main = main
         self.deps = deps
-        self.flags = flags if flags is not None else True
+        self.flags = flags if flags is not None else JAVA_BINARY_FLAGS_DEFAULT
         self.premain = premain
 
     @cache
