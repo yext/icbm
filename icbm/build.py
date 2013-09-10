@@ -54,12 +54,10 @@ def main():
     # Module paths (the options of the modules section) must be case sensitive.
     config.optionxform = str
     config.read("icbm.cfg")
-    module_paths = []
     if config.has_section("modules"):
         module_paths = [path for path, _ in config.items("modules")]
-    if not module_paths:
-        print "ERROR: No modules specified in icbm.cfg."
-        sys.exit(1)
+    else:
+        module_paths = ["lib", "src"]
     if config.has_option("java", "flags_by_default"):
         data.JAVA_BINARY_FLAGS_DEFAULT = config.getboolean(
             "java", "flags_by_default")
