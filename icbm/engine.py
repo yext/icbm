@@ -22,6 +22,7 @@ import class_cache
 import symlink
 
 BUILD_DIR = "build"
+ICBM_PATH = "tools/icbm"
 
 class BuildError(Exception):
 
@@ -246,7 +247,7 @@ class JavaCompile(Target):
         compile_xml = os.path.join(prefix, "compile.xml")
         if not os.path.exists(compile_xml):
             symlink.symlink(
-                os.path.join(os.path.abspath("."), "tools/icbm/compile.xml"),
+                os.path.join(os.path.abspath("."), ICBM_PATH, "compile.xml"),
                 compile_xml)
 
         # Set up the src/ directory, by symlinking in all the
@@ -321,7 +322,7 @@ class JavaCompile(Target):
     def GenerateRunner(self):
         # Create a script to run the whole thing with appropriate
         # class path and main class.
-        srcrunner = open("tools/icbm/java_run.sh")
+        srcrunner = open(ICBM_PATH + "/java_run.sh")
         with srcrunner:
             text = srcrunner.read()
             runner_path = os.path.join(self.prefix, self.name)
@@ -332,7 +333,7 @@ class JavaCompile(Target):
                 outrunner.write(text % {"main_class": self.main})
             os.chmod(runner_path, 0755)
 
-        srcdebugger = open("tools/icbm/java_debug.sh")
+        srcdebugger = open(ICBM_PATH + "/java_debug.sh")
         with srcdebugger:
             text = srcdebugger.read()
             debugger_path = os.path.join(self.prefix, "%s-debug" % self.name)
