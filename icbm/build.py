@@ -65,6 +65,10 @@ def main():
     if config.has_option("java", "flags_by_default"):
         data.JAVA_BINARY_FLAGS_DEFAULT = config.getboolean(
             "java", "flags_by_default")
+    if config.has_option("proto", "protobuf_java"):
+        protobuf_java = config.get("proto", "protobuf_java")
+    else:
+        protobuf_java = "lib=:protobuf-java-2.5.0"
 
     try:
         os.mkdir(engine.BUILD_DIR)
@@ -113,7 +117,7 @@ def main():
                 RegisterJavaLibrary(module, f)
                 # Autodep doesn't find the dependency on protobufs.
                 data.DataHolder.Get(mname, f.DepName()).deps.append(
-                    "Core/jars=:protobuf-java-2.5.0")
+                    protobuf_java)
 
                 gen = data.Generate(
                     mname, f.path, f.name + "_proto",
