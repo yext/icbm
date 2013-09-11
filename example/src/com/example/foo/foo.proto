@@ -1,0 +1,7 @@
+package foo;
+option java_package = "com.example.foo";
+option java_outer_classname = "FooProtos";
+
+message FooMsg {
+  optional string text = 1;
+}
