@@ -54,10 +54,6 @@ def main():
     # Module paths (the options of the modules section) must be case sensitive.
     config.optionxform = str
     config.read("icbm.cfg")
-    if config.has_option("icbm", "icbm_path"):
-        engine.ICBM_PATH = config.get("icbm", "icbm_path")
-    else:
-        engine.ICBM_PATH
     if config.has_section("modules"):
         module_paths = [path for path, _ in config.items("modules")]
     else:
@@ -121,7 +117,7 @@ def main():
 
                 gen = data.Generate(
                     mname, f.path, f.name + "_proto",
-                    "../../%s/genproto.sh" % engine.ICBM_PATH, None,
+                    "%s/genproto.sh" % engine.ICBM_PATH, None,
                     list(data.FixPath(mname, f.path, ["%s.proto" % f.protoname])) + f.extras,
                     [os.path.join(f.path, "%s.java" % f.name)])
                 data.DataHolder.Register(mname, f.path, f.name + "_proto", gen)

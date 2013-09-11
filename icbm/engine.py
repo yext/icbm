@@ -22,7 +22,7 @@ import class_cache
 import symlink
 
 BUILD_DIR = "build"
-ICBM_PATH = "tools/icbm"
+ICBM_PATH = os.path.abspath(os.path.dirname(__file__))
 
 class BuildError(Exception):
 
@@ -247,7 +247,7 @@ class JavaCompile(Target):
         compile_xml = os.path.join(prefix, "compile.xml")
         if not os.path.exists(compile_xml):
             symlink.symlink(
-                os.path.join(os.path.abspath("."), ICBM_PATH, "compile.xml"),
+                os.path.join(ICBM_PATH, "compile.xml"),
                 compile_xml)
 
         # Set up the src/ directory, by symlinking in all the
