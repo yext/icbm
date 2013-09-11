@@ -1,8 +1,4 @@
 #!/usr/bin/python2.7
-#
-# Copyright 2010 Yext, Inc. All Rights Reserved.
-
-__author__ = "ilia@yext.com (Ilia Mirkin)"
 
 import ConfigParser
 import optparse

@@ -1,8 +1,4 @@
 #!/usr/bin/python
-#
-# Copyright 2011 Yext, Inc. All Rights Reserved.
-
-__author__ = "ilia@yext.com (Ilia Mirkin)"
 
 import cPickle
 import os
