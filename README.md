@@ -1,3 +1,9 @@
+# UNMAINTAINED
+
+Yext has moved primarily to using [Bazel][] to manage our builds, and no further updates are planned for ICBM.
+
+[Bazel]: https://bazel.build/
+
 # ICBM
 
 ICBM is a build tool that specializes in building Java applications. It also includes support for handling [protocol buffer][] definitions, [Play framework 1.x] projects, and build steps that are arbitrary commands.
@@ -5,9 +11,9 @@ ICBM is a build tool that specializes in building Java applications. It also inc
 [protocol buffer]: https://developers.google.com/protocol-buffers/docs/overview
 [Play framework 1.x]: http://www.playframework.com/documentation/1.2.7/home
 
-ICBM has been the primary Java build tool used at [Yext][] since late 2010.
+ICBM was the primary Java build tool used at [Yext][] from 2010 until 2018.
 
-[Yext]: http://www.yext.com/
+[Yext]: https://www.yext.com/
 
 ## System Requirements
 
@@ -25,13 +31,3 @@ The `example/` folder contains an example project that shows off some of the fea
     ./build/Foo/Foo
     ../icbm/build.py src=com/example/foo:Foo_deploy
     ./build/Foo_deploy.jar
-
-## To Learn More
-
-This documentation is a work in progress, and it will be fleshed out in more detail leading up to our [live event on September 24, 2013][]. We are also working on sanding off more of the Yext-specific rough edges.
-
-[live event on September 24, 2013]: http://build.splashthat.com/
-
-In the meantime, we invite you to join the project and send questions or contributions through either GitHub or [our Google Group][]!
-
-[our Google Group]: https://groups.google.com/d/forum/icbm-users "icbm-users in Google Groups"
